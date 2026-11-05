@@ -1,0 +1,23 @@
+{
+  "project": "__SLUG__",
+  "language": "vi",
+  "outputDir": "output",
+  "targets": ["ios-6.9", "android-phone"],
+  "panorama": false,
+  "layout": "text-top",
+  "fonts": {
+    "headline": ["SFPro-Bold"],
+    "subheadline": ["SFPro-Regular"]
+  },
+  "typography": { "headlineScale": 1.0, "maxLines": 2 },
+  "theme": {
+    "background": { "type": "gradient", "angle": 90, "stops": ["#2B1A8F", "#5B3DF5"] },
+    "headlineColor": "#FFFFFF",
+    "subColor": "#DCD4FF"
+  },
+  "device": { "style": "frame" },
+  "slides": [
+    { "screenshot": "input/01.png", "headline": "Headline ảnh 1", "subheadline": "Subheadline ảnh 1" },
+    { "screenshot": "input/02.png", "headline": "Headline ảnh 2" }
+  ]
+}
