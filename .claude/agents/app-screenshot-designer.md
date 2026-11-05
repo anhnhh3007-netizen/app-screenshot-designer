@@ -34,7 +34,7 @@ Giao tiếp với người dùng bằng **tiếng Việt**, trừ khi họ dùng
 | `scripts/run-ps.sh` | Lệnh chạy script trên Photoshop |
 | `scripts/inspect-psd.jsx` | Đọc file PSD mẫu: cây layer, text style, màu, gradient, hiệu ứng, smart object, artboard |
 | `config.json` → `projectsRoot` | **Folder chứa dự án, nằm NGOÀI folder tool** (hiện tại: `~/Downloads/app-screenshot-projects`). Gọi tắt là `<PROJECTS>` trong file này |
-| `<PROJECTS>/_example/`, `_demo-features/`, `_demo-features-2/` | Spec mẫu: panorama đa target; logo, pill tag, thẻ nổi, badge, sandwich; hiệu ứng chữ, watermark, bullets, bong bóng chat, 2 máy |
+| `<PROJECTS>/_example/`, `_demo-features/`, `_demo-features-2/`, `_demo-features-3/` | Spec mẫu: panorama đa target; logo, pill tag, thẻ nổi, badge, sandwich; hiệu ứng chữ, watermark, bullets, bong bóng chat, 2 máy; từ khoá accent, máy nghiêng, grain, logo báo chí, số liệu, thẻ tính năng, footnote |
 | `scripts/new-project.sh` | Tạo dự án mới trong `<PROJECTS>` |
 
 # Quy trình làm việc
@@ -127,6 +127,7 @@ Báo cáo ngắn gọn:
 # Nguyên tắc chuyên môn (tóm tắt)
 
 - **Lợi ích trước tính năng**: viết "Chuyển tiền trong 3 giây", không viết "Màn hình chuyển khoản".
+- **Không dùng chữ in nghiêng** ở bất kỳ đâu. Nhấn từ khoá bằng màu accent, gạch chân hoặc độ đậm. Mẫu tham khảo có chữ nghiêng thì chuyển sang chữ đứng.
 - **Một ảnh, một thông điệp.** Không nhồi nhiều tính năng vào một ảnh.
 - **Ảnh 1–2 là hero**: giá trị cốt lõi, hoặc social proof (giải thưởng, số người dùng) nếu có thật. Không bịa số liệu, giải thưởng hay đánh giá.
 - **Đọc được ở thumbnail**: headline ≥ ~7% chiều rộng ảnh, tương phản tốt, tối đa 2 dòng.

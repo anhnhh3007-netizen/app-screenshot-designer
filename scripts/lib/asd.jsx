@@ -248,6 +248,14 @@ var ASD = ASD || {};
             gl.putUnitDouble(cTID('Inpr'), cTID('#Prc'), 50);
             fx.putObject(cTID('OrGl'), cTID('OrGl'), gl);
         }
+        if (o.overlay) {
+            var ov = new ActionDescriptor();
+            ov.putBoolean(cTID('enab'), true);
+            ov.putEnumerated(cTID('Md  '), cTID('BlnM'), cTID('Nrml'));
+            ov.putObject(cTID('Clr '), cTID('RGBC'), rgbDesc(o.overlay.color || '#FFFFFF'));
+            ov.putUnitDouble(cTID('Opct'), cTID('#Prc'), o.overlay.opacity === undefined ? 100 : o.overlay.opacity);
+            fx.putObject(cTID('SoFi'), cTID('SoFi'), ov);
+        }
         if (o.shadow) {
             var ds = new ActionDescriptor();
             ds.putBoolean(cTID('enab'), true);
@@ -360,9 +368,16 @@ var ASD = ASD || {};
         return FONT_MAP[ps] === true;
     };
 
+    // Design rule: no italic / oblique type anywhere.
+    A.isItalic = function (ps) { return /italic|oblique|slanted/i.test(String(ps || '')); };
+
     A.pickFont = function (wanted, fallback) {
         var list = (wanted instanceof Array) ? wanted : [wanted];
-        for (var i = 0; i < list.length; i++) if (list[i] && A.fontExists(list[i])) return list[i];
+        for (var i = 0; i < list.length; i++) {
+            if (!list[i]) continue;
+            if (A.isItalic(list[i])) { A.warnings.push('Font "' + list[i] + '" is italic, skipped (italic type is not allowed)'); continue; }
+            if (A.fontExists(list[i])) return list[i];
+        }
         var fb = fallback || ['SFPro-Bold', 'Inter-Bold', 'HelveticaNeue-Bold', 'Arial-BoldMT'];
         for (var j = 0; j < fb.length; j++) {
             if (A.fontExists(fb[j])) {
@@ -446,6 +461,75 @@ var ASD = ASD || {};
     A.centerOn = function (layer, cx, cy) {
         var b = A.bounds(layer);
         layer.translate(cx === null ? 0 : cx - (b.x + b.w / 2), cy === null ? 0 : cy - (b.y + b.h / 2));
+    };
+
+    // Splits "Plan for [anything] big" into plain text and accent ranges (brackets removed).
+    A.parseAccents = function (text) {
+        var out = '', ranges = [], start = -1;
+        for (var i = 0; i < text.length; i++) {
+            var c = text.charAt(i);
+            if (c === '[' && start < 0) { start = out.length; continue; }
+            if (c === ']' && start >= 0) { if (out.length > start) ranges.push({ from: start, to: out.length }); start = -1; continue; }
+            out += c;
+        }
+        return { text: out, ranges: ranges };
+    };
+
+    // Recolors / underlines character ranges of the active text layer. o: { color, underline }
+    A.applyAccents = function (layer, ranges, o) {
+        if (!ranges || !ranges.length) return;
+        app.activeDocument.activeLayer = layer;
+        var ref = new ActionReference();
+        ref.putEnumerated(cTID('Lyr '), cTID('Ordn'), cTID('Trgt'));
+        var tk = executeActionGet(ref).getObjectValue(sTID('textKey'));
+        var len = tk.getString(cTID('Txt ')).length;
+        var base = tk.getList(sTID('textStyleRange')).getObjectValue(0).getObjectValue(sTID('textStyle'));
+        function styled(accent) {
+            var ts = new ActionDescriptor();
+            ts.fromStream(base.toStream());
+            if (accent) {
+                if (o.color) ts.putObject(cTID('Clr '), cTID('RGBC'), rgbDesc(o.color));
+                if (o.underline) ts.putEnumerated(sTID('underline'), sTID('underline'), sTID('underlineOnLeftInVertical'));
+            }
+            return ts;
+        }
+        var list = new ActionList(), pos = 0;
+        function push(from, to, accent) {
+            if (to <= from) return;
+            var r = new ActionDescriptor();
+            r.putInteger(sTID('from'), from);
+            r.putInteger(sTID('to'), to);
+            r.putObject(sTID('textStyle'), sTID('textStyle'), styled(accent));
+            list.putObject(sTID('textStyleRange'), r);
+        }
+        for (var i = 0; i < ranges.length; i++) {
+            push(pos, ranges[i].from, false);
+            push(ranges[i].from, Math.min(ranges[i].to, len), true);
+            pos = ranges[i].to;
+        }
+        push(pos, len, false);
+        tk.putList(sTID('textStyleRange'), list);
+        var d = new ActionDescriptor();
+        d.putReference(cTID('null'), ref);
+        d.putObject(cTID('T   '), sTID('textLayer'), tk);
+        executeAction(cTID('setd'), d, DialogModes.NO);
+    };
+
+    // Film-grain layer over a rectangle: 50% gray + monochrome noise in Overlay mode.
+    A.addGrain = function (name, x, y, w, h, o) {
+        o = o || {};
+        var doc = app.activeDocument;
+        var layer = doc.artLayers.add();
+        layer.name = name;
+        doc.selection.select([[x, y], [x + w, y], [x + w, y + h], [x, y + h]]);
+        doc.selection.fill(A.solidColor('#808080'));
+        doc.selection.deselect();
+        layer.transparentPixelsLocked = true;
+        layer.applyAddNoise(o.amount || 8, NoiseDistribution.GAUSSIAN, true);
+        layer.transparentPixelsLocked = false;
+        layer.blendMode = BlendMode.OVERLAY;
+        layer.opacity = o.opacity === undefined ? 40 : o.opacity;
+        return layer;
     };
 
     // ---------- Export ----------

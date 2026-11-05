@@ -16,6 +16,10 @@ Nên đặt mỗi bộ mẫu trong một thư mục con, ví dụ `samples/finte
 | [bevel-health/](bevel-health/notes.md) | Bevel: Health & Performance | Cao cấp, tối giản, nền bạc, thẻ UI nổi | App sức khoẻ, lifestyle, premium |
 | [flooz-crypto/](flooz-crypto/notes.md) | Flooz: Crypto Analyst | Vui nhộn, 3D mascot, panorama, chữ phát sáng | App trẻ, Gen Z, AI chat, social |
 | [moneta-crypto/](moneta-crypto/notes.md) | Moneta: Crypto Exchange | Fintech tối, IN HOA đậm, xanh cobalt | Ngân hàng, sàn giao dịch, B2B tin cậy |
+| [tandem-savings/](tandem-savings/notes.md) | Tandem: tiết kiệm cho cặp đôi | Editorial, serif mảnh, xanh mint, hero tối | Tiết kiệm, lifestyle, app gia đình/cặp đôi |
+| [finmate-finance/](finmate-finance/notes.md) | Finmate (concept) | Glassy, gradient grain xanh, từ khoá nghiêng | Quản lý tài chính cá nhân, ví |
+| [paylix-money/](paylix-money/notes.md) | Paylix (concept) | Soft UI tím lavender, 3D, hero không có máy | Quản lý chi tiêu, app thân thiện |
+| [alinea-invest/](alinea-invest/notes.md) | Alinea: đầu tư cho người mới | Poster condensed IN HOA, tím neon, 3D clay, ảnh người thật | Đầu tư, Gen Z, giáo dục tài chính |
 
 ## Kỹ thuật các mẫu dùng và trạng thái engine
 
@@ -33,3 +37,21 @@ Sắp theo số mẫu cần đến. **Tất cả đã có** (xem `references/spe
 | 8 | ✅ **2 máy chồng nhau** `secondDevice` | ✓ |  |  |
 
 Vật thể 3D, mascot và ảnh nền chụp đã làm được bằng decoration `image`, nhưng cần bạn cung cấp file PNG.
+
+## Kỹ thuật từ đợt mẫu thứ 2
+
+**Đã có hết** (demo `_demo-features-3/`). Riêng chữ in nghiêng **không dùng** theo quy tắc thiết kế: nhấn từ khoá bằng màu hoặc gạch chân.
+
+| # | Kỹ thuật | Tandem | Finmate | Paylix | Alinea |
+|---|---|:-:|:-:|:-:|:-:|
+| 9 | ✅ **Đổi màu / gạch chân một từ** trong headline `[từ khoá]` (không in nghiêng) | ✓ | ✓ |  | ✓ |
+| 10 | ✅ **Máy nghiêng** `device.rotate` (xoay phẳng) | ✓ | ✓ |  |  |
+| 11 | ✅ **Footnote / tagline nhỏ ở đáy** `footnote` (chú thích pháp lý, câu kết) |  |  | ✓ | ✓ |
+| 12 | ✅ **Thẻ tính năng tự vẽ** `cards` (icon + tiêu đề + mô tả), không cắt từ screenshot |  |  | ✓ |  |
+| 13 | ✅ **Cột số liệu** `stats`: số to + nhãn nhỏ |  | ✓ |  |  |
+| 14 | ✅ **Hàng logo báo chí** `pressLogos` | ✓ |  |  |  |
+| 15 | ✅ **Nền grain** `grain` |  | ✓ |  |  |
+| 16 | ✅ **Pill viền** `eyebrow.outline`, **icon vuông bo góc** `bullets.iconShape` |  | ✓ |  | ✓ |
+
+Không áp dụng: nút CTA "Download now" (Google Play cấm) và badge có logo Apple (chỉ dùng khi app thật sự được Apple chọn).
+

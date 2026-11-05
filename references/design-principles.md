@@ -18,7 +18,7 @@
 | Ngắn: headline 2–6 từ, tối đa 2 dòng | **Chuyển tiền trong 3 giây** | Ứng dụng giúp bạn chuyển tiền nhanh chóng và an toàn |
 | Động từ mạnh, chủ động | **Theo dõi** mọi khoản chi | Các khoản chi được theo dõi |
 | Một ý mỗi ảnh | **Tiết kiệm tự động** | Tiết kiệm, đầu tư và vay |
-| Có thể nhấn mạnh 1–2 từ khoá bằng màu accent (engine chưa tự làm: chỉnh tay text layer trong PSD) | Ngủ **sâu hơn** mỗi đêm | Tô màu cả câu |
+| Có thể nhấn mạnh 1–2 từ khoá bằng màu accent hoặc gạch chân: viết `[từ khoá]` trong spec. **Không in nghiêng** | Ngủ **sâu hơn** mỗi đêm | Tô màu cả câu, in nghiêng |
 | Subheadline (tuỳ chọn) giải thích "bằng cách nào" | AI phân loại giao dịch cho bạn | Lặp lại headline |
 
 - **Tiếng Việt**: dài hơn tiếng Anh khoảng 20–30%. Viết bản tiếng Việt trước rồi rút gọn. Kiểm tra dấu trên chữ in hoa (Ầ, Ẩ, Ữ) không bị cắt ở mép trên.
@@ -26,6 +26,8 @@
 - Tránh CTA kiểu "Tải ngay" (Google Play cấm), giá cả, khuyến mãi có thời hạn.
 
 ## 3. Typography
+
+> **Quy tắc bắt buộc: KHÔNG dùng chữ in nghiêng (italic / oblique) ở bất kỳ đâu trong thiết kế**: headline, subheadline, wordmark, nhãn, footnote. Muốn nhấn từ khoá thì dùng **màu accent**, **gạch chân**, hoặc **độ đậm**. Engine tự bỏ qua mọi font có "Italic", "Oblique" hay "Slanted" trong tên. Mẫu tham khảo có chữ nghiêng (Tandem, Finmate) thì chuyển sang chữ đứng.
 
 - **Headline**: sans-serif đậm (Bold/ExtraBold). Kích thước khoảng **7–8% chiều rộng ảnh** cho ảnh dọc, **10–12% chiều cao** cho ảnh ngang.
 - **Subheadline**: Regular/Medium, khoảng **55–60% cỡ headline**, độ tương phản thấp hơn một bậc.

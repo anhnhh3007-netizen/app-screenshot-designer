@@ -1,6 +1,6 @@
 # Định dạng `spec.json`
 
-Mỗi dự án là một file `<projectsRoot>/<app-slug>/spec.json`, nằm ngoài folder tool (`projectsRoot` khai báo trong `config.json`). Tạo nhanh bằng `scripts/new-project.sh <app-slug>`. Đường dẫn tương đối trong spec được tính từ thư mục chứa spec. Ví dụ đầy đủ (trong `projectsRoot`): `_example/spec.json` (panorama, đa target) và `_demo-features/spec.json` (logo, pill tag, thẻ nổi, badge, sandwich, slide không có máy) và `_demo-features-2/spec.json` (hiệu ứng chữ, watermark, danh sách lợi ích, bong bóng chat, 2 máy).
+Mỗi dự án là một file `<projectsRoot>/<app-slug>/spec.json`, nằm ngoài folder tool (`projectsRoot` khai báo trong `config.json`). Tạo nhanh bằng `scripts/new-project.sh <app-slug>`. Đường dẫn tương đối trong spec được tính từ thư mục chứa spec. Ví dụ đầy đủ (trong `projectsRoot`): `_example/spec.json` (panorama, đa target) và `_demo-features/spec.json` (logo, pill tag, thẻ nổi, badge, sandwich, slide không có máy) `_demo-features-2/spec.json` (hiệu ứng chữ, watermark, danh sách lợi ích, bong bóng chat, 2 máy) và `_demo-features-3/spec.json` (từ khoá accent, máy nghiêng, grain, logo báo chí, số liệu, thẻ tính năng, footnote, pill viền).
 
 Chạy:
 ```bash
@@ -52,6 +52,8 @@ Nếu không có font nào, engine dùng font dự phòng (SF Pro → Inter → 
 | `align` | center (dọc), left (ngang) | left · center · right |
 | `leading` | 1.08 | Khoảng cách dòng headline |
 | `tracking` | -10 | Khoảng cách chữ headline |
+| `accentColor` | `theme.accentColor` | Màu cho từ khoá viết trong ngoặc vuông: `"Cách [dễ nhất] để…"` |
+| `accentUnderline` | false | Gạch chân từ khoá trong ngoặc vuông |
 | `uppercase` | false | Tự chuyển headline (và watermark) sang IN HOA, đúng cả dấu tiếng Việt |
 | `partGap` | 0.12 | Khoảng cách giữa các phần của headline nhiều cỡ chữ (× cỡ headline) |
 | `effects` | | Hiệu ứng chữ cho headline: `{ "stroke": { "width": 0.03, "color": "#FFF", "opacity": 100 }, "glow": { "size": 0.25, "spread": 10, "color": "#9FD0FF", "opacity": 60 } }` (width, size × cỡ chữ) |
@@ -66,7 +68,8 @@ Headline nhiều dòng được tự cân bằng độ dài các dòng để tr�
   "background": { "type": "gradient", "angle": 0, "stops": ["#2B1A8F", "#8F5CFF"] },
   "background": { "type": "gradient", "angle": 90, "stops": [{ "color": "#fff", "location": 0 }, { "color": "#eee", "location": 0.7 }] },
   "headlineColor": "#FFFFFF",
-  "subColor": "#DCD4FF"
+  "subColor": "#DCD4FF",
+  "accentColor": "#7BE0C3"           // màu từ khoá [..] trong headline/subheadline, số liệu stats
 }
 ```
 `angle`: 0 = trái → phải, 90 = dưới → trên. Thêm `"radial": true` để có gradient tròn.
@@ -77,6 +80,7 @@ Headline nhiều dòng được tự cân bằng độ dài các dòng để tr�
 |---|---|---|
 | `style` | `frame` | `frame` (viền vector) · `frameless` (bo góc màn hình) · `mockup` (PSD smart object) · `none` (không có máy) |
 | `scale` | 0.76 (0.80 iPad) | Chiều rộng máy / chiều rộng ảnh |
+| `rotate` | 0 | Xoay máy (độ, dương = theo chiều kim đồng hồ). Kết hợp `deviceOffsetX` và `bleed` cho kiểu máy nghiêng tràn mép |
 | `bleed` | false | true: máy được phép tràn khỏi mép ảnh, không bị thu nhỏ cho vừa |
 | `bezel` | 0.035 | Độ dày viền / chiều rộng máy |
 | `bezelColor` | `#111318` | Màu viền |
@@ -161,7 +165,7 @@ Mỗi phần là một dòng riêng (1 dòng, tự thu nhỏ nếu dài), xếp 
 ```jsonc
 "bullets": {
   "items": [ "Chuyển tiền miễn phí", { "text": "Hỗ trợ 24/7", "icon": "input/icon-support.png" } ],
-  "scale": 1.1, "width": 1, "iconFill": "#FFFFFF", "iconOpacity": 20, "iconColor": "#FFFFFF", "color": "#E3EEFF"
+  "scale": 1.1, "width": 1, "iconShape": "square", "iconFill": "#FFFFFF", "iconOpacity": 20, "iconColor": "#FFFFFF", "color": "#E3EEFF"
 }
 ```
 Viết tắt: `"bullets": ["…", "…"]`. Không có `icon` thì dùng dấu ✓ (đổi bằng `mark`). Danh sách nằm ngay dưới subheadline và di chuyển cùng khối text.
@@ -185,6 +189,47 @@ Viết tắt: `"bullets": ["…", "…"]`. Không có `icon` thì dùng dấu �
 ```
 `scale` × chiều rộng máy chính, `x`, `y` là góc trên trái tính theo khung máy chính. Dùng chung kiểu khung (`frame` hoặc `frameless`; chưa hỗ trợ `mockup`). Kết hợp `deviceOffsetX` âm để đẩy máy chính sang trái.
 
+## Từ khoá accent
+
+Viết từ khoá trong ngoặc vuông ở `headline` hoặc `subheadline`: `"Nơi mục tiêu gặp [tăng trưởng]"`. Ngoặc bị bỏ đi khi dựng. Từ khoá dùng `typography.accentColor` (hoặc `theme.accentColor`), thêm `typography.accentUnderline: true` để gạch chân. **Không dùng in nghiêng.**
+
+## Grain
+
+```jsonc
+"grain": { "amount": 10, "opacity": 45 }   // ở cấp spec (panorama hoặc mọi slide) hoặc trong từng slide; true = mặc định
+```
+Một lớp nhiễu hạt đơn sắc ở chế độ Overlay, phủ lên nền.
+
+## Press logos ("Featured in")
+
+```jsonc
+"pressLogos": { "title": "Được nhắc đến trên", "items": ["input/press-1.png", "input/press-2.png"], "height": 0.03, "color": "#FFFFFF", "opacity": 80, "maxWidth": 0.86 }
+```
+Logo tự xếp hàng, căn giữa, thu nhỏ nếu quá rộng. `color` tô một màu cho logo (logo đơn sắc). Không có `y` thì hàng logo nằm trong luồng text, ngay dưới headline, và máy tự dời xuống. Có `y` thì đặt cố định theo tâm. **Chỉ dùng khi app thật sự được báo chí nhắc tới.**
+
+## Stats (cột số liệu)
+
+```jsonc
+"stats": { "items": [ { "value": "811K+", "label": "Người dùng" } ], "x": 0.93, "y": 0.5, "align": "right", "scale": 0.85, "valueColor": "#1C6FE8", "labelColor": "#3D4452", "gap": 0.75 }
+```
+`x` là mép trái (`align: left`), mép phải (`right`) hoặc tâm (`center`). **Chỉ dùng số liệu thật**, kèm `footnote` nếu cần chú thích.
+
+## Cards (thẻ tính năng tự vẽ)
+
+```jsonc
+"cards": [ { "title": "Kiểm soát chi tiêu", "text": "Theo dõi chi tiêu…", "icon": "input/icon.png", "x": 0.07, "y": 0.52, "w": 0.86,
+             "relativeTo": "slide", "fill": "#FFFFFF", "iconFill": "#EEE8FF", "iconShape": "square", "radius": 0.07, "scale": 1 } ]
+```
+Thẻ trắng có bóng, icon bên trái, tiêu đề và mô tả bên phải. Chiều cao tự tính theo nội dung.
+
+## Footnote
+
+```jsonc
+"footnote": "*Hiệu suất quá khứ không đảm bảo kết quả tương lai."
+"footnote": { "text": "…", "scale": 1.3, "color": "#EDE5FF", "align": "center", "bottom": 0.975 }
+```
+Chữ nhỏ ở đáy slide. Khi có footnote, text căn dưới tự chừa thêm khoảng trống.
+
 ## Logo
 
 ```jsonc
@@ -198,7 +243,7 @@ Viết tắt: `"bullets": ["…", "…"]`. Không có `icon` thì dùng dấu �
 ```jsonc
 "eyebrow": { "text": "Nutrition", "icon": "input/icon-food.png", "fill": "#FFFFFF", "opacity": 85, "color": "#1A1A1A", "scale": 1 }
 ```
-Viết tắt: `"eyebrow": "Nutrition"`. Pill nằm ngay trên headline, căn theo `typography.align`.
+Viết tắt: `"eyebrow": "Nutrition"`. Pill viền: `"outline": { "color": "#FFFFFF", "width": 0.1 }` kèm `"opacity": 0` để nền trong suốt. Pill nằm ngay trên headline, căn theo `typography.align`.
 
 ## Callouts (thẻ UI nổi)
 
@@ -253,6 +298,5 @@ Script in ra `OK {json}` với danh sách file và `warnings`, hoặc `ERROR: �
 
 ## Giới hạn hiện tại
 
-- Chưa tô màu riêng **một vài từ trong cùng một dòng**. Tô theo dòng thì dùng headline nhiều phần với `color` riêng.
 - Chưa có đuôi nhọn cho bong bóng chat.
-- Chưa xoay hay nghiêng máy, chưa hỗ trợ 3 máy trở lên: dùng `style: "mockup"` hoặc script riêng (xem phần "Khi engine không đủ" trong file agent).
+- Máy chỉ xoay phẳng, chưa có phối cảnh 3D. Chưa hỗ trợ 3 máy trở lên: dùng `style: "mockup"` hoặc script riêng (xem phần "Khi engine không đủ" trong file agent).

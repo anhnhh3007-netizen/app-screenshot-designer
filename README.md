@@ -66,7 +66,9 @@ scripts/run-ps.sh scripts/build.jsx ~/Downloads/app-screenshot-projects/my-app/s
 
 ## Engine làm được
 
-Khung máy vector (Dynamic Island), frameless, mockup PSD có smart object · bố cục text-top, text-bottom, sandwich, side, không có máy · máy tràn mép · panorama · gradient · logo và pill tag · thẻ UI nổi (cắt từ screenshot) · badge xếp hạng có vòng nguyệt quế · danh sách lợi ích có icon · bong bóng chat · 2 máy chồng nhau · chữ viền và phát sáng, IN HOA, trộn nhiều cỡ chữ, watermark · tự thu nhỏ và cân bằng dòng headline.
+Khung máy vector (Dynamic Island), frameless, mockup PSD có smart object · bố cục text-top, text-bottom, sandwich, side, không có máy · máy tràn mép · panorama · gradient · logo và pill tag · thẻ UI nổi (cắt từ screenshot) · badge xếp hạng có vòng nguyệt quế · danh sách lợi ích có icon · bong bóng chat · 2 máy chồng nhau · máy nghiêng · chữ viền và phát sáng, IN HOA, trộn nhiều cỡ chữ, từ khoá accent (màu, gạch chân), watermark · thẻ tính năng · cột số liệu · hàng logo báo chí · footnote · nền grain · tự thu nhỏ và cân bằng dòng headline.
+
+**Quy tắc thiết kế:** không dùng chữ in nghiêng (engine tự chặn font Italic/Oblique).
 
 Chi tiết: [`references/spec-format.md`](references/spec-format.md).
 

@@ -55,7 +55,8 @@
     // ---------- Text block ----------
     function makeText(name, text, box, style, maxLines, minSize) {
         var size = style.size;
-        var layer = A.addText(name, text, box, style);
+        var acc = A.parseAccents(String(text));      // "[word]" marks an accent range
+        var layer = A.addText(name, acc.text, box, style);
         var tries = 0;
         while (A.textLines(layer, size, style.leading) > maxLines && size > minSize && tries < 8) {
             size = size * 0.92;
@@ -66,6 +67,7 @@
         var lines = A.textLines(layer, size, style.leading);
         if (lines > maxLines) A.warnings.push(name + ': text still exceeds ' + maxLines + ' lines, shorten the copy');
         if (lines > 1 && style.balance !== false) balanceText(layer, box, style, size, lines);
+        if (acc.ranges.length) A.applyAccents(layer, acc.ranges, style.accent || {});
         return layer;
     }
 
@@ -127,6 +129,13 @@
         if (eb.icon) icon = A.placeFile(A.resolvePath(BASE, eb.icon), 'Eyebrow icon');
         var pw = tb.w + 2 * padX + (icon ? iconW + s * 0.45 : 0);
         var pill = A.roundedRect('Eyebrow pill', tx, y, pw, h, h / 2, eb.fill || '#FFFFFF', eb.opacity === undefined ? 85 : eb.opacity);
+        if (eb.outline) {
+            var ol = (typeof eb.outline === 'object') ? eb.outline : {};
+            A.layerEffects({ stroke: { size: Math.max(1, s * (ol.width || 0.12)), color: ol.color || eb.color || '#111111' } });
+            // opacity applies to the fill only, so the outline stays visible on a transparent pill
+            pill.opacity = 100;
+            pill.fillOpacity = eb.opacity === undefined ? 100 : eb.opacity;
+        }
         var cx = tx + padX;
         if (icon) { A.fitLayer(icon, { x: cx, y: y + (h - iconW) / 2, w: iconW, h: iconW }, 'contain'); cx += iconW + s * 0.45; }
         txt.translate(cx - tb.x, (y + h / 2) - (tb.y + tb.h / 2));
@@ -253,7 +262,8 @@
         for (var k = 0; k < bl.items.length; k++) {
             var it = bl.items[k];
             if (typeof it === 'string') it = { text: it };
-            var circle = A.shape('Bullet ' + (k + 1) + ' icon bg', colX, y, d, d, { ellipse: true, fill: bl.iconFill || '#FFFFFF', opacity: bl.iconOpacity === undefined ? 20 : bl.iconOpacity });
+            var sq = bl.iconShape === 'square';
+            var circle = A.shape('Bullet ' + (k + 1) + ' icon bg', colX, y, d, d, { ellipse: !sq, radius: sq ? d * 0.26 : 0, fill: bl.iconFill || '#FFFFFF', opacity: bl.iconOpacity === undefined ? 20 : bl.iconOpacity });
             layers.push(circle);
             var ic;
             if (it.icon) {
@@ -325,6 +335,127 @@
         return { layers: layers, clips: clips };
     }
 
+    // ---------- Feature card (drawn, not cropped) ----------
+    // c: { title, text, icon, x, y, w (fractions of ref), relativeTo, fill, color, subColor, radius (x card w), scale, iconFill, iconShape }
+    function addCard(c, idx, slot, devRect, W, fonts, theme) {
+        var ref = (c.relativeTo === 'device' && devRect) ? devRect : slot;
+        var cw = c.w * ref.w, cx = ref.x + c.x * ref.w, cy = ref.y + c.y * ref.h;
+        var ts = W * 0.04 * (c.scale || 1), pad = ts * 1.1;
+        var name = 'Card ' + idx, layers = [], icoW = 0;
+        var inner = [];
+        if (c.icon) {
+            icoW = ts * 2.6;
+            var sq = c.iconShape !== 'circle';
+            inner.push(A.shape(name + ' icon bg', cx + pad, cy + pad, icoW, icoW, { ellipse: !sq, radius: sq ? icoW * 0.28 : 0, fill: c.iconFill || theme.accentColor || '#EEF0FF' }));
+            var ic = A.placeFile(A.resolvePath(BASE, c.icon), name + ' icon');
+            A.fitLayer(ic, { x: cx + pad + icoW * 0.22, y: cy + pad + icoW * 0.22, w: icoW * 0.56, h: icoW * 0.56 }, 'contain');
+            inner.push(ic);
+        }
+        var tx = cx + pad + (icoW ? icoW + pad * 0.8 : 0), tw = cw - (tx - cx) - pad;
+        var ty = cy + pad, bottom = cy + pad + icoW;
+        if (c.title) {
+            var tl = A.addText(name + ' title', c.title, { x: tx, y: ty, w: tw, h: ts * 6 },
+                { font: A.pickFont(fonts.headline), size: ts, color: c.color || '#111318', align: 'left', leading: 1.15 });
+            var tb = A.bounds(tl); tl.translate(0, ty - tb.y); tb = A.bounds(tl);
+            inner.push(tl); ty = tb.b + ts * 0.45; bottom = Math.max(bottom, tb.b);
+        }
+        if (c.text) {
+            var tt = A.addText(name + ' text', c.text, { x: tx, y: ty, w: tw, h: ts * 10 },
+                { font: A.pickFont(fonts.subheadline || fonts.headline, ['SFPro-Regular', 'ArialMT']), size: ts * 0.72, color: c.subColor || '#5A6070', align: 'left', leading: 1.35 });
+            var sb = A.bounds(tt); tt.translate(0, ty - sb.y); sb = A.bounds(tt);
+            inner.push(tt); bottom = Math.max(bottom, sb.b);
+        }
+        var ch = bottom - cy + pad;
+        var bg = A.roundedRect(name, cx, cy, cw, ch, (c.radius === undefined ? 0.07 : c.radius) * cw, c.fill || '#FFFFFF', c.opacity);
+        A.dropShadow({ opacity: 18, size: W * 0.04, distance: W * 0.012, angle: 90 });
+        layers.push(bg);
+        return layers.concat(inner);
+    }
+
+    // ---------- Stat block ----------
+    // st: { items:[{ value, label }], x, y (fractions of slide), align, valueColor, labelColor, scale, gap }
+    function addStats(st, ox, W, H, fonts, theme) {
+        var align = st.align || 'left';
+        var vs = W * 0.085 * (st.scale || 1), ls = vs * 0.42;
+        var ax = ox + (st.x === undefined ? 0.5 : st.x) * W, y = (st.y === undefined ? 0.5 : st.y) * H;
+        var layers = [];
+        for (var k = 0; k < st.items.length; k++) {
+            var it = st.items[k];
+            var v = A.addPointText('Stat ' + (k + 1) + ' value', it.value, { font: A.pickFont(st.font || fonts.headline), size: vs, color: st.valueColor || theme.accentColor || theme.headlineColor || '#111111', tracking: -10 });
+            var l = A.addPointText('Stat ' + (k + 1) + ' label', it.label, { font: A.pickFont(fonts.subheadline || fonts.headline, ['SFPro-Regular', 'ArialMT']), size: ls, color: st.labelColor || theme.subColor || '#555555' });
+            var vb = A.bounds(v);
+            v.translate(0, y - vb.y); vb = A.bounds(v);
+            var lb = A.bounds(l);
+            l.translate(0, vb.b + vs * 0.22 - lb.y); lb = A.bounds(l);
+            var pair = [v, l];
+            for (var q = 0; q < 2; q++) {
+                var b = A.bounds(pair[q]);
+                var nx = align === 'left' ? ax : (align === 'right' ? ax - b.w : ax - b.w / 2);
+                pair[q].translate(nx - b.x, 0);
+            }
+            layers.push(v, l);
+            y = lb.b + vs * (st.gap === undefined ? 0.75 : st.gap);
+        }
+        return layers;
+    }
+
+    // ---------- Press / partner logo row ----------
+    // lg: { title, items:[paths], y (center, fraction of H), height (x W), maxWidth (x W), gap (x height), color (tint), opacity, titleColor }
+    function addLogoRow(lg, ox, W, H, fonts, theme) {
+        var h = W * (lg.height || 0.035), gap = h * (lg.gap === undefined ? 1.1 : lg.gap);
+        var cy = H * (lg.y === undefined ? 0.4 : lg.y);
+        var imgs = [], total = 0;
+        for (var k = 0; k < lg.items.length; k++) {
+            var im = A.placeFile(A.resolvePath(BASE, lg.items[k]), 'Press logo ' + (k + 1));
+            A.fitLayer(im, { x: ox, y: cy - h / 2, w: W * 0.4, h: h }, 'contain');
+            if (lg.color) { app.activeDocument.activeLayer = im; A.layerEffects({ overlay: { color: lg.color } }); }
+            if (lg.opacity !== undefined) im.opacity = lg.opacity;
+            imgs.push(im);
+            total += A.bounds(im).w;
+        }
+        total += gap * (imgs.length - 1);
+        var maxW = W * (lg.maxWidth || 0.86);
+        if (total > maxW) {
+            var s = maxW / total;
+            for (var r = 0; r < imgs.length; r++) imgs[r].resize(s * 100, s * 100, AnchorPosition.MIDDLECENTER);
+            gap *= s; total = maxW;
+        }
+        var x = ox + (W - total) / 2;
+        for (var j = 0; j < imgs.length; j++) {
+            var b = A.bounds(imgs[j]);
+            imgs[j].translate(x - b.x, cy - (b.y + b.h / 2));
+            x += b.w + gap;
+        }
+        var layers = imgs.slice(0);
+        if (lg.title) {
+            var t = A.addPointText('Press title', lg.title, { font: A.pickFont(fonts.subheadline || fonts.headline, ['SFPro-Regular', 'ArialMT']), size: W * 0.026, color: lg.titleColor || theme.subColor || '#777777' });
+            A.centerOn(t, ox + W / 2, cy - h * 1.35);
+            layers.unshift(t);
+        }
+        return layers;
+    }
+
+    // ---------- Footnote ----------
+    function addFootnote(fn, ox, W, H, font, theme) {
+        if (typeof fn === 'string') fn = { text: fn };
+        var size = W * 0.022 * (fn.scale || 1);
+        var t = A.addText('Footnote', fn.text, { x: ox + W * 0.08, y: 0, w: W * 0.84, h: size * 6 },
+            { font: font, size: size, color: fn.color || theme.subColor || '#777777', align: fn.align || 'center', leading: 1.3 });
+        var b = A.bounds(t);
+        t.translate(0, H * (fn.bottom === undefined ? 0.975 : fn.bottom) - b.b);
+        if (fn.opacity !== undefined) t.opacity = fn.opacity;
+        return t;
+    }
+
+    // Groups a device's layers (clipping kept) and rotates them together.
+    function rotateDevice(doc, md, angle, name) {
+        var g = A.newGroup(doc, name);
+        for (var i = 0; i < md.layers.length; i++) A.addToGroup(g, md.layers[i]);
+        for (var c = 0; c < md.clips.length; c++) md.clips[c].grouped = true;
+        g.rotate(angle, AnchorPosition.MIDDLECENTER);
+        return { layers: [g], clips: [] };
+    }
+
     // ---------- One slide ----------
     function buildSlide(doc, cfg, t, slide, i, ox) {
         var W = t.w, H = t.h;
@@ -346,6 +477,8 @@
         if (!cfg.panorama || slide.background) {
             stack.push(A.shape('Background', ox, 0, W, H, { fill: slide.background || theme.background || '#ffffff' }));
         }
+        var grain = slide.grain !== undefined ? slide.grain : (!cfg.panorama ? cfg.grain : null);
+        if (grain) stack.push(A.addGrain('Grain', ox, 0, W, H, (typeof grain === 'object') ? grain : {}));
         // ---- Text ----
         var margin = W * (landscape ? 0.06 : 0.07);
         var baseSize = landscape ? H * 0.10 : (t.platform === 'ipad' ? W * 0.058 : W * 0.075);
@@ -358,6 +491,8 @@
         var subFont = A.pickFont(fonts.subheadline || fonts.headline, ['SFPro-Regular', 'Inter-Regular', 'HelveticaNeue', 'ArialMT']);
         var sandwich = layout === 'sandwich';
         function up(s) { return typo.uppercase ? String(s).toUpperCase() : s; }
+        var accentStyle = { color: typo.accentColor || theme.accentColor, underline: !!typo.accentUnderline };
+        var bottomPad = slide.footnote ? 0.1 : 0.06;   // leave room for the footnote under bottom-aligned text
 
         // Watermark: huge faint text behind everything except the background
         if (slide.watermark) {
@@ -368,7 +503,7 @@
             });
             A.centerOn(wl, ox + W / 2, H * (wm.y === undefined ? 0.14 : wm.y));
             stack.push(wl);
-            if (stack.length === 2) clips.push(wl); // clip to this slide's background so it can't spill into neighbours
+            if (stack.length >= 2 && stack[0].name === 'Background' && !grain) clips.push(wl); // clip to this slide's background so it can't spill into neighbours
         }
         var decos = slide.decorations || [];
         for (var di = 0; di < decos.length; di++) stack.push(addDecoration(decos[di], ox, W, H, 'Deco ' + (di + 1)));
@@ -389,7 +524,8 @@
         }
         function makeSub(yy) {
             return makeText('Subheadline', slide.subheadline, { x: tx, y: yy, w: tw, h: H * 0.25 },
-                { font: subFont, size: sSize, color: theme.subColor || theme.headlineColor || '#444444', align: align, leading: 1.25, tracking: 0, balance: false },
+                { font: subFont, size: sSize, color: theme.subColor || theme.headlineColor || '#444444', align: align, leading: 1.25, tracking: 0, balance: false,
+                  accent: { color: theme.accentColor, underline: false } },
                 typo.subMaxLines || 3, sSize * 0.7);
         }
         // Headline: a string, or an array of parts with their own scale / color / font (mixed sizes).
@@ -401,7 +537,7 @@
                 var ps = hSize * (part.scale || 1);
                 var hl = makeText(parts.length > 1 ? 'Headline ' + (p + 1) : 'Headline', up(part.text), { x: tx, y: py, w: tw, h: H * 0.35 },
                     { font: part.font ? A.pickFont(part.font) : headFont, size: ps, color: part.color || theme.headlineColor || '#111111', align: align,
-                      leading: typo.leading || 1.08, tracking: typo.tracking === undefined ? -10 : typo.tracking },
+                      leading: typo.leading || 1.08, tracking: typo.tracking === undefined ? -10 : typo.tracking, accent: accentStyle },
                     parts.length > 1 ? 1 : (typo.maxLines || 2), ps * 0.6);
                 applyTextFx(hl, typo.effects, ps);
                 out.push(hl);
@@ -424,13 +560,23 @@
             topLayers.push(sub1);
             y = A.bounds(sub1).b + hSize * 0.5;
         }
-        if (slide.bullets) topLayers = topLayers.concat(addBullets(slide.bullets, y, align, tx, tw, sSize, subFont, theme));
+        if (slide.bullets) {
+            var bl = addBullets(slide.bullets, y, align, tx, tw, sSize, subFont, theme);
+            topLayers = topLayers.concat(bl);
+            y = A.unionBounds(bl).b + hSize * 0.5;
+        }
+        if (slide.pressLogos && slide.pressLogos.y === undefined) {
+            var pl = addLogoRow(slide.pressLogos, ox, W, H, fonts, theme);
+            var pu = A.unionBounds(pl);
+            A.translateAll(pl, 0, y + hSize * 0.3 - pu.y);
+            topLayers = topLayers.concat(pl);
+        }
 
         var tu = A.unionBounds(topLayers);
-        if (tu && layout === 'text-bottom') A.translateAll(topLayers, 0, (H - H * 0.06 - tu.h) - tu.y);
+        if (tu && layout === 'text-bottom') A.translateAll(topLayers, 0, (H - H * bottomPad - tu.h) - tu.y);
         else if (tu && layout === 'side') A.translateAll(topLayers, 0, (H - tu.h) / 2 - tu.y);
         var bu = A.unionBounds(bottomLayers);
-        if (bu) A.translateAll(bottomLayers, 0, (H - H * 0.06 - bu.h) - bu.y);
+        if (bu) A.translateAll(bottomLayers, 0, (H - H * bottomPad - bu.h) - bu.y);
         tu = A.unionBounds(topLayers);
         bu = A.unionBounds(bottomLayers);
         var textTop = tu ? tu.y : H * 0.065, textBottom = tu ? tu.b : H * 0.065;
@@ -486,6 +632,7 @@
                 var dyy = anchor === 'bottom' ? area.y + area.h - dH : (anchor === 'center' ? area.y + (area.h - dH) / 2 : area.y);
                 devRect = { x: dx, y: dyy, w: dW, h: dH };
                 var md = makeDevice(dev, t, W, shot, dx, dyy, dW, dH, bez, slide.placeholderLabel || ('Screen ' + n2(i)), subFont, 'Device');
+                if (dev.rotate) md = rotateDevice(doc, md, dev.rotate, 'Device');
                 devLayers = devLayers.concat(md.layers);
                 clips = clips.concat(md.clips);
 
@@ -499,6 +646,8 @@
                     var dH2 = (dW2 - 2 * bez2) / asp2 + 2 * bez2;
                     var x2 = dx + (sd.x === undefined ? 0.55 : sd.x) * dW, y2 = dyy + (sd.y === undefined ? 0.3 : sd.y) * dH;
                     var md2 = makeDevice(dev, t, W, shot2, x2, y2, dW2, dH2, bez2, sd.placeholderLabel || 'Screen 2', subFont, 'Device 2');
+                    var rot2 = sd.rotate !== undefined ? sd.rotate : dev.rotate;
+                    if (rot2) md2 = rotateDevice(doc, md2, rot2, 'Device 2');
                     devLayers = devLayers.concat(md2.layers);
                     clips = clips.concat(md2.clips);
                 }
@@ -518,8 +667,15 @@
         var bubbles = slide.bubbles || [];
         for (var bi = 0; bi < bubbles.length; bi++) calloutLayers = calloutLayers.concat(addBubble(bubbles[bi], bi + 1, slot, devRect, sSize, subFont));
 
-        // ---- Badge ----
+        // ---- Feature cards ----
+        var cards = slide.cards || [];
+        for (var ki = 0; ki < cards.length; ki++) calloutLayers = calloutLayers.concat(addCard(cards[ki], ki + 1, slot, devRect, W, fonts, theme));
+
+        // ---- Badge, stats, press logos, footnote ----
         var extra = [];
+        if (slide.stats) extra = extra.concat(addStats(slide.stats, ox, W, H, fonts, theme));
+        if (slide.pressLogos && slide.pressLogos.y !== undefined) extra = extra.concat(addLogoRow(slide.pressLogos, ox, W, H, fonts, theme));
+        if (slide.footnote) extra.push(addFootnote(slide.footnote, ox, W, H, subFont, theme));
         if (slide.badge) extra.push(addBadge(slide.badge, ox, W, H, fonts, theme));
 
         // ---- Stack order: background -> decorations/watermark -> device -> callouts/bubbles -> text -> badge ----
@@ -546,6 +702,7 @@
         try {
             if (cfg.panorama) {
                 var bg = A.shape('Panorama background', 0, 0, W * N, H, { fill: (cfg.theme && cfg.theme.background) || '#ffffff' });
+                if (cfg.grain) A.addGrain('Panorama grain', 0, 0, W * N, H, (typeof cfg.grain === 'object') ? cfg.grain : {});
                 var pdecos = cfg.decorations || [];
                 if (pdecos.length) {
                     var dg = A.newGroup(doc, 'Panorama decorations');
