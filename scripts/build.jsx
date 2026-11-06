@@ -600,9 +600,26 @@
             var aspect;
 
             if (dev.style === 'mockup') {
-                if (!shotPath) throw new Error('Slide ' + (i + 1) + ': mockup style needs a screenshot');
+                var mkFile = dev.mockup && (dev.mockup.preset || dev.mockup.psd);
+                if (!mkFile || !new File(A.resolvePath(BASE, mkFile)).exists || !shotPath) {
+                    A.warnings.push('Slide ' + (i + 1) + ': ' + (shotPath ? 'mockup not found (' + mkFile + ')' : 'mockup needs a screenshot') + ', using the vector frame instead');
+                    dev.style = 'frame';
+                }
+            }
+            if (dev.style === 'mockup') {
                 var mk = deepMerge(dev.mockup, {});
-                mk.psd = A.resolvePath(BASE, mk.psd);
+                if (mk.preset) {
+                    // a reusable mockup description (JSON next to the PSD); spec values override it
+                    var presetFile = new File(A.resolvePath(BASE, mk.preset));
+                    var preset = A.readJSON(presetFile);
+                    preset.psd = A.resolvePath(presetFile.parent.fsName, preset.psd);
+                    var own = deepMerge(dev.mockup, {});
+                    delete own.preset;
+                    mk = deepMerge(preset, own);
+                    if (own.psd) mk.psd = A.resolvePath(BASE, own.psd);
+                } else {
+                    mk.psd = A.resolvePath(BASE, mk.psd);
+                }
                 var tmp = Folder.temp.fsName + '/asd_mockup_' + i + '.png';
                 A.renderMockup(mk, shotPath, tmp);
                 var mock = A.placeFile(tmp, 'Device (mockup)');

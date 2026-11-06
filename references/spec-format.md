@@ -90,19 +90,40 @@ Headline nhiều dòng được tự cân bằng độ dài các dòng để tr�
 | `screenColor` | `#E9ECF2` | Màu màn hình placeholder |
 | `mockup` | | Xem bên dưới |
 
-### Mockup PSD của người dùng
+### Mockup PSD (khung màn hình mặc định)
+
+**Khung mặc định của dự án mới** là mockup **clay iPhone** (Freepik 19151874), có preset sẵn trong thư viện dùng chung:
 
 ```jsonc
 "device": {
   "style": "mockup",
+  "scale": 0.86,
+  "shadow": false,                     // dùng bóng có sẵn của mockup
   "mockup": {
-    "psd": "../../samples/iphone-clay.psd",   // file mockup
-    "smartObject": "SCREEN",                   // tên smart object chứa màn hình
-    "hideLayers": ["Background", "Shadow"]     // layer cần ẩn để PNG trong suốt
+    "preset": "../_stock-library/mockups/freepik-19151874_clay-iphone-white.mockup.json",
+    "color": "black",                  // màu thân máy: "white" (mặc định) hoặc "black"; màu khác cần "customColor": true
+    "nativeShadow": false              // tuỳ chọn: tắt bóng xám của mockup (nên tắt trên nền tối, kèm device.shadow)
   }
 }
 ```
-Engine mở mockup, thay ảnh chụp màn hình vào smart object, xuất PNG trong suốt, rồi đặt vào ảnh như một khối máy. Ảnh chụp màn hình phải đúng tỉ lệ smart object.
+
+Preset là file JSON nằm cạnh PSD, mô tả cách dùng mockup:
+```jsonc
+{
+  "psd": "freepik-19151874_clay-iphone-white.psd",
+  "smartObject": "Editable layers/Design smart object/Your design here",   // tên hoặc đường dẫn "Group/Layer"
+  "hideLayers": ["Editable layers/Background color", "..."],               // ẩn để PNG trong suốt, không có quầng sáng
+  "colorLayer": "Editable layers/Phone color/Change color",                 // lớp solid fill dùng cho "color"
+  "shadowLayers": ["Editable layers/Phone/Shadow 1", "Editable layers/Phone/Shadow 2"]
+}
+```
+**Quy tắc màu thân máy:** chỉ dùng `"white"` hoặc `"black"` (preset định nghĩa mã màu ở `colors`). Màu khác (mã hex) chỉ dùng khi người dùng yêu cầu, và phải thêm `"customColor": true`, nếu không engine sẽ cảnh báo và dùng màu trắng.
+
+Mọi khoá trong `mockup` của spec ghi đè preset. Có thể khai báo thẳng `psd`, `smartObject`… mà không cần preset.
+
+Cách engine dựng: mở PSD, **mở smart object ra và đặt screenshot phủ kín** (`replaceMode: "replace"` để dùng Replace Contents), ẩn layer, đổi màu, **cắt sát quanh máy** (`crop: false` để giữ nguyên canvas, `cropPad` chỉnh lề), xuất PNG trong suốt rồi đặt vào slide. Mockup chưa xoay được bằng `device.rotate`. Không tìm thấy mockup thì engine tự dùng khung vector và ghi cảnh báo.
+
+**Thêm mockup mới:** chạy `scripts/inspect-psd.jsx` để biết tên smart object và các group, rồi viết preset `.mockup.json` cạnh file PSD trong `_stock-library/mockups/`. Nhớ kiểm tra các layer phủ toàn canvas (phản chiếu, nền) và ẩn chúng.
 
 ## `slides[]`
 
@@ -274,6 +295,10 @@ Cắt một vùng trong ảnh, phóng to thành thẻ bo góc có bóng đổ, �
 - `x`, `y`: tâm badge, tỉ lệ theo slide. `laurel: false` để bỏ vòng nguyệt quế.
 - Ví dụ khác: `{ "title": "100,000+", "subtitle": "REVIEWS" }`.
 - **Chỉ dùng số liệu thật do người dùng cung cấp.** Không bịa điểm đánh giá, số người dùng hay giải thưởng.
+
+## Tài nguyên Adobe Stock
+
+Mọi đường dẫn ảnh (`decorations`, `callouts.source`, `cards.icon`, `bullets.icon`, `pressLogos`, `device.mockup.psd`) có thể trỏ tới thư viện dùng chung: `"../_stock-library/3d/1146985365_piggy-bank.png"`. Xem `references/adobe-stock.md`.
 
 ## `decorations[]`
 

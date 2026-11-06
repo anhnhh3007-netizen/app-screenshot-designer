@@ -15,7 +15,12 @@
     "headlineColor": "#FFFFFF",
     "subColor": "#DCD4FF"
   },
-  "device": { "style": "frame" },
+  "device": {
+    "style": "mockup",
+    "scale": 0.86,
+    "shadow": false,
+    "mockup": { "preset": "../_stock-library/mockups/freepik-19151874_clay-iphone-white.mockup.json" }
+  },
   "slides": [
     { "screenshot": "input/01.png", "headline": "Headline ảnh 1", "subheadline": "Subheadline ảnh 1" },
     { "screenshot": "input/02.png", "headline": "Headline ảnh 2" }

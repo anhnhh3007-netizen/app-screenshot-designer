@@ -36,6 +36,10 @@ Giao tiếp với người dùng bằng **tiếng Việt**, trừ khi họ dùng
 | `config.json` → `projectsRoot` | **Folder chứa dự án, nằm NGOÀI folder tool** (hiện tại: `~/Downloads/app-screenshot-projects`). Gọi tắt là `<PROJECTS>` trong file này |
 | `<PROJECTS>/_example/`, `_demo-features/`, `_demo-features-2/`, `_demo-features-3/` | Spec mẫu: panorama đa target; logo, pill tag, thẻ nổi, badge, sandwich; hiệu ứng chữ, watermark, bullets, bong bóng chat, 2 máy; từ khoá accent, máy nghiêng, grain, logo báo chí, số liệu, thẻ tính năng, footnote |
 | `scripts/new-project.sh` | Tạo dự án mới trong `<PROJECTS>` |
+| `references/adobe-stock.md` | Cách tham khảo Adobe Stock: tìm cảm hứng, mockup, vật thể 3D, icon. **Chỉ xem, không license** |
+| `scripts/stock-peek.sh` | Xem thumbnail Adobe Stock (thư mục tạm, xoá sau khi xem) |
+| `<PROJECTS>/_stock-library/` | Thư viện tài nguyên Stock dùng chung, do **người dùng tự tải** vào |
+| `<PROJECTS>/_stock-library/mockups/*.mockup.json` | Preset mockup. **Khung màn hình mặc định: clay iPhone** (`freepik-19151874_clay-iphone-white.mockup.json`) |
 
 # Quy trình làm việc
 
@@ -62,6 +66,10 @@ Nếu có ảnh trong `samples/`, mở từng ảnh (dùng Read để xem) và g
 - Typography: font serif hay sans, độ đậm, tỉ lệ headline so với chiều rộng, căn lề, số dòng.
 - Màu nền: đơn sắc, gradient, có hình trang trí (blob, vòng tròn, pattern) không.
 - Nhịp độ của cả bộ: các ảnh đồng nhất hay xen kẽ, có ảnh "hero" mở đầu không.
+
+### Tham khảo Adobe Stock
+
+Luôn làm theo `references/adobe-stock.md`: tìm 2–3 truy vấn cảm hứng cùng ngành và phong cách, xem thumbnail bằng `scripts/stock-peek.sh`, rồi ghi điểm học được vào concept. **Không bao giờ gọi `asset_license_and_download_stock`.**
 
 ### Mẫu là file PSD
 
@@ -90,8 +98,9 @@ Trình bày concept dạng bảng **trước khi dựng bất cứ thứ gì**:
 
 - **Big idea**: 1 câu định vị cho cả bộ.
 - **Storyboard**: từng ảnh gồm thứ tự, tính năng, màn hình dùng, headline (≤ 6 từ nếu được), subheadline (tuỳ chọn).
-- **Hướng visual**: bảng màu (hex), font, phong cách khung máy, bố cục, có panorama hay không.
+- **Hướng visual**: bảng màu (hex), font, phong cách khung máy, bố cục, có panorama hay không. **Khung mặc định là mockup clay iPhone. Màu thân máy chỉ dùng trắng (`white`) hoặc đen (`black`)**: chọn màu tương phản với nền. Nền sáng thì máy đen hoặc trắng, nền tối thì máy trắng, hoặc máy đen kèm `nativeShadow: false`. **Chỉ dùng màu khác khi người dùng yêu cầu rõ**, lúc đó thêm `"customColor": true`. Chỉ dùng khung khác khi người dùng yêu cầu, hoặc khi cần máy xoay, máy Android, iPad.
 - **Danh sách đầu ra** và kích thước tương ứng.
+- **Tài nguyên Adobe Stock đề xuất** (nếu concept cần mockup, vật thể 3D, ảnh người hay icon): ghi vào `<PROJECTS>/<app>/stock-picks.md` theo mẫu trong `references/adobe-stock.md`, để người dùng duyệt và **tự tải** vào `_stock-library/`.
 
 Sau đó **DỪNG LẠI và chờ người dùng duyệt**. Không viết spec, không chạy Photoshop cho tới khi người dùng đồng ý hoặc yêu cầu sửa. Nếu bạn là subagent chạy nền, trả concept về cho agent chính kèm ghi chú rõ "CẦN DUYỆT CONCEPT", rồi kết thúc.
 

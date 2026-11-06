@@ -318,7 +318,18 @@ var ASD = ASD || {};
         return layer;
     };
 
+    // Finds a layer by name, or by path "Group/Sub/Layer" when names repeat.
     A.findLayer = function (container, name) {
+        if (name.indexOf('/') >= 0) {
+            var parts = name.split('/'), cur = container;
+            for (var p = 0; p < parts.length; p++) {
+                var found = null;
+                for (var j = 0; j < cur.layers.length; j++) if (cur.layers[j].name === parts[p]) { found = cur.layers[j]; break; }
+                if (!found) return null;
+                cur = found;
+            }
+            return cur;
+        }
         for (var i = 0; i < container.layers.length; i++) {
             var l = container.layers[i];
             if (l.name === name) return l;
@@ -330,24 +341,82 @@ var ASD = ASD || {};
         return null;
     };
 
-    A.replaceSmartObject = function (doc, layerName, imagePath) {
+    // Puts an image into a smart object. mode "edit" (default): open the contents, place the image
+    // scaled to fill the smart object canvas, hide the old contents, save. mode "replace": Replace Contents.
+    A.replaceSmartObject = function (doc, layerName, imagePath, mode, fit) {
         var layer = A.findLayer(doc, layerName);
         if (!layer) throw new Error('Smart object layer "' + layerName + '" not found in mockup');
         doc.activeLayer = layer;
-        var d = new ActionDescriptor();
-        d.putPath(cTID('null'), new File(imagePath));
-        executeAction(sTID('placedLayerReplaceContents'), d, DialogModes.NO);
+        if (mode === 'replace') {
+            var d = new ActionDescriptor();
+            d.putPath(cTID('null'), new File(imagePath));
+            executeAction(sTID('placedLayerReplaceContents'), d, DialogModes.NO);
+            return layer;
+        }
+        executeAction(sTID('placedLayerEditContents'), new ActionDescriptor(), DialogModes.NO);
+        var inner = app.activeDocument;
+        try {
+            var W = inner.width.as('px'), H = inner.height.as('px');
+            var img = A.placeFile(imagePath, 'Screenshot');
+            A.fitLayer(img, { x: 0, y: 0, w: W, h: H }, fit || 'cover');
+            for (var i = 0; i < inner.layers.length; i++) if (inner.layers[i] !== img) inner.layers[i].visible = false;
+        } finally {
+            inner.close(SaveOptions.SAVECHANGES);
+        }
+        app.activeDocument = doc;
+        return layer;
     };
 
-    // Renders a mockup PSD with the screenshot inside, returns path to a transparent PNG.
+    // Changes the color of a solid-color fill layer.
+    A.setSolidFill = function (doc, layer, hex) {
+        doc.activeLayer = layer;
+        var d = new ActionDescriptor(), r = new ActionReference();
+        r.putEnumerated(sTID('contentLayer'), cTID('Ordn'), cTID('Trgt'));
+        d.putReference(cTID('null'), r);
+        var c = new ActionDescriptor();
+        c.putObject(cTID('Clr '), cTID('RGBC'), rgbDesc(hex));
+        d.putObject(cTID('T   '), sTID('solidColorLayer'), c);
+        executeAction(cTID('setd'), d, DialogModes.NO);
+    };
+
+    // Renders a mockup PSD with the screenshot inside and returns the path of a transparent PNG.
+    // mockup: { psd, smartObject, hideLayers[], colorLayer, color, crop (true), cropPad (x screen width), replaceMode, fit }
     A.renderMockup = function (mockup, screenshotPath, tmpPath) {
         var src = app.open(new File(mockup.psd));
         try {
-            A.replaceSmartObject(src, mockup.smartObject || 'SCREEN', screenshotPath);
-            var hide = mockup.hideLayers || [];
+            var so = A.replaceSmartObject(src, mockup.smartObject || 'SCREEN', screenshotPath, mockup.replaceMode, mockup.fit);
+            var sb = A.bounds(so);
+            var hide = (mockup.hideLayers || []).slice(0);
+            // the mockup's own shadows can be switched off (e.g. gray shadows glow on dark backgrounds)
+            if (mockup.nativeShadow === false) hide = hide.concat(mockup.shadowLayers || []);
             for (var i = 0; i < hide.length; i++) {
                 var hl = A.findLayer(src, hide[i]);
                 if (hl) hl.visible = false;
+                else A.warnings.push('Mockup: layer "' + hide[i] + '" not found');
+            }
+            // Body color rule: only "white" or "black" unless customColor is set.
+            var bodyColor = mockup.color;
+            if (bodyColor) {
+                var palette = mockup.colors || { white: '#FFFFFF', black: '#1B1C22' };
+                var key = String(bodyColor).toLowerCase();
+                if (palette[key]) bodyColor = palette[key];
+                else if (!mockup.customColor) {
+                    A.warnings.push('Mockup color "' + mockup.color + '" is not allowed (use "white" or "black", or set customColor: true); using white');
+                    bodyColor = palette.white || '#FFFFFF';
+                }
+            }
+            if (bodyColor && mockup.colorLayer) {
+                var cl = A.findLayer(src, mockup.colorLayer);
+                if (cl) A.setSolidFill(src, cl, bodyColor);
+                else A.warnings.push('Mockup: color layer "' + mockup.colorLayer + '" not found');
+            }
+            if (mockup.crop !== false) {
+                // keep the phone + its shadow: screen bounds grown by cropPad on each side (more at the bottom)
+                var pad = sb.w * (mockup.cropPad === undefined ? 0.16 : mockup.cropPad);
+                var dw = src.width.as('px'), dh = src.height.as('px');
+                var x0 = Math.max(0, sb.x - pad), y0 = Math.max(0, sb.y - pad);
+                var x1 = Math.min(dw, sb.r + pad), y1 = Math.min(dh, sb.b + pad * 1.6);
+                src.crop([new UnitValue(x0, 'px'), new UnitValue(y0, 'px'), new UnitValue(x1, 'px'), new UnitValue(y1, 'px')]);
             }
             var o = new PNGSaveOptions();
             o.compression = 3;
@@ -379,13 +448,15 @@ var ASD = ASD || {};
             if (A.fontExists(list[i])) return list[i];
         }
         var fb = fallback || ['SFPro-Bold', 'Inter-Bold', 'HelveticaNeue-Bold', 'Arial-BoldMT'];
+        var asked = [];
+        for (var q = 0; q < list.length; q++) if (list[q]) asked.push(list[q]);
         for (var j = 0; j < fb.length; j++) {
             if (A.fontExists(fb[j])) {
-                A.warnings.push('Font "' + list.join('/') + '" not installed, using ' + fb[j]);
+                if (asked.length) A.warnings.push('Font "' + asked.join('/') + '" not installed, using ' + fb[j]);
                 return fb[j];
             }
         }
-        A.warnings.push('Font "' + list.join('/') + '" not installed, using ArialMT');
+        if (asked.length) A.warnings.push('Font "' + asked.join('/') + '" not installed, using ArialMT');
         return 'ArialMT';
     };
 

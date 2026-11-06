@@ -49,6 +49,7 @@ scripts/
   lib/asd.jsx      thư viện hàm Photoshop dùng chung
   run-ps.sh        chạy .jsx trên Photoshop qua osascript
   new-project.sh   tạo dự án mới (ngoài folder tool)
+  stock-peek.sh    xem thumbnail Adobe Stock (không license, không lưu)
 samples/         mẫu tham khảo + bản phân tích (notes.md)
 templates/       spec mẫu cho dự án mới
 config.example.json   vị trí folder chứa dự án (projectsRoot)
@@ -69,6 +70,8 @@ scripts/run-ps.sh scripts/build.jsx ~/Downloads/app-screenshot-projects/my-app/s
 Khung máy vector (Dynamic Island), frameless, mockup PSD có smart object · bố cục text-top, text-bottom, sandwich, side, không có máy · máy tràn mép · panorama · gradient · logo và pill tag · thẻ UI nổi (cắt từ screenshot) · badge xếp hạng có vòng nguyệt quế · danh sách lợi ích có icon · bong bóng chat · 2 máy chồng nhau · máy nghiêng · chữ viền và phát sáng, IN HOA, trộn nhiều cỡ chữ, từ khoá accent (màu, gạch chân), watermark · thẻ tính năng · cột số liệu · hàng logo báo chí · footnote · nền grain · tự thu nhỏ và cân bằng dòng headline.
 
 **Quy tắc thiết kế:** không dùng chữ in nghiêng (engine tự chặn font Italic/Oblique).
+
+**Adobe Stock:** agent tìm và xem thumbnail Adobe Stock qua Adobe for creativity connector để lấy cảm hứng và đề xuất mockup, vật thể 3D, icon. Agent **không license hay tải**: bạn tự tải tài nguyên vào `<projectsRoot>/_stock-library/`. Xem [`references/adobe-stock.md`](references/adobe-stock.md).
 
 Chi tiết: [`references/spec-format.md`](references/spec-format.md).
 
