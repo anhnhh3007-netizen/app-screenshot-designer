@@ -75,6 +75,7 @@
 - Thêm **phần tử nối** vắt qua mép: blob, đường cong, dải màu, hoặc máy đặt lệch (`deviceOffsetX`).
 - **Không đặt text vắt qua mép.** Text luôn nằm gọn trong một ảnh.
 - Kiểm tra từng ảnh đứng riêng: vẫn phải hiểu được thông điệp.
+- Lưu ý đầy đủ cho layout liền (vùng an toàn, khóa thứ tự, A/B test, nhiều target, bản địa hoá): `references/layout-catalog.md` mục 6.
 
 ## 8. Product Showcase UI
 

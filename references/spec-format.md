@@ -210,6 +210,44 @@ Viết tắt: `"bullets": ["…", "…"]`. Không có `icon` thì dùng dấu �
 ```
 `scale` × chiều rộng máy chính, `x`, `y` là góc trên trái tính theo khung máy chính. Dùng chung kiểu khung (`frame` hoặc `frameless`; chưa hỗ trợ `mockup`). Kết hợp `deviceOffsetX` âm để đẩy máy chính sang trái.
 
+## Devices (3 máy trở lên: quạt, lưới, hàng ngang)
+
+```jsonc
+"devices": [
+  { "screenshot": "input/02.png", "x": 0.62, "y": 0.55, "w": 0.44, "rotate": 6 },   // x, y: tâm máy (tỉ lệ slide); w × chiều rộng ảnh
+  { "x": 1.08, "y": 0.6, "w": 0.5, "z": "front" }                                   // không có screenshot = placeholder; z: "back" (mặc định) | "front"
+]
+```
+- Thêm máy ngoài máy chính và `secondDevice`. Dùng chung kiểu khung của slide; `mockup` cần `screenshot`, thiếu thì dùng khung vector.
+- `rotate` độ, chiều kim đồng hồ. `x` ngoài 0–1 để máy bị cắt bởi mép ảnh (L28).
+- Slide chỉ có `devices` (không máy chính): `"device": { "style": "none" }`. Muốn các máy này vẫn dùng mockup (vd. máy nghiêng duy nhất): thêm `"style": "mockup"` vào từng máy (lấy `device.mockup` của spec).
+- `secondDevice` có `rotate` riêng.
+
+## Máy vắt qua mép (layout liền)
+
+Máy chính, `secondDevice` hoặc `devices` vượt mép ảnh (`deviceOffsetX`, `x` ngoài 0–1, máy xoay lớn) được engine **tự nối sang ảnh kế**: phần nằm trên ảnh kế được chép vào ảnh đó, ngay trên nền và dưới chữ, nên ảnh kế có `background` riêng vẫn thấy đủ phần máy. Không cần khai báo gì thêm. Ảnh đầu vắt ra mép trái hoặc ảnh cuối vắt ra mép phải thì có cảnh báo "will be cut". Nội dung của ảnh kế phải tránh vùng máy đi vào. Không muốn nối (máy chỉ tràn mép cho đẹp, phần thừa bị nền ảnh kế che như cũ): thêm `"crossEdge": "clip"` vào slide.
+
+## Chips (nhãn đặt tự do)
+
+```jsonc
+"chips": [ { "text": "Đặt phòng", "x": 0.07, "y": 0.3, "align": "left", "scale": 1.5, "fill": "#111318", "color": "#FFFFFF", "icon": "input/ic.png" } ]
+```
+`x`, `y`: điểm neo (tỉ lệ slide); `align` cho biết `x` là mép trái / giữa / mép phải của chip. Mặc định nền đen chữ trắng. Có `outline` như eyebrow.
+
+## Arrows (mũi tên vẽ tay)
+
+```jsonc
+"arrows": [ { "from": [0.4, 0.31], "to": [0.6, 0.39], "bend": -0.45, "width": 0.01, "head": 0.045, "color": "#111318" } ]
+```
+`bend`: độ cong (tỉ lệ độ dài; dương cong về bên phải hướng đi, âm về bên trái). `width`, `head` × chiều rộng ảnh.
+
+## Text xoay
+
+```jsonc
+"typography": { "rotate": -55, "rotateX": 0.3, "rotateY": 0.3 }
+```
+Xoay cả khối logo / eyebrow / headline / subheadline (độ, chiều kim đồng hồ) quanh tâm của nó; `rotateX`, `rotateY` (tuỳ chọn) đặt tâm khối chữ sau khi xoay. Dùng với `layout: "device-only"` để vị trí máy không phụ thuộc chữ (L27).
+
 ## Từ khoá accent
 
 Viết từ khoá trong ngoặc vuông ở `headline` hoặc `subheadline`: `"Nơi mục tiêu gặp [tăng trưởng]"`. Ngoặc bị bỏ đi khi dựng. Từ khoá dùng `typography.accentColor` (hoặc `theme.accentColor`), thêm `typography.accentUnderline: true` để gạch chân. **Không dùng in nghiêng.**
@@ -289,6 +327,8 @@ Cắt một vùng trong ảnh, phóng to thành thẻ bo góc có bóng đổ, �
 
 ## Badge (social proof)
 
+`badge` là một object, hoặc **mảng** nhiều badge (L25: 3 dòng đánh giá).
+
 ```jsonc
 "badge": { "title": "4.8", "subtitle": "★★★★★", "x": 0.5, "y": 0.9, "scale": 1, "color": "#111318", "laurel": true, "laurelColor": "#111318" }
 ```
@@ -306,7 +346,12 @@ Mọi đường dẫn ảnh (`decorations`, `callouts.source`, `cards.icon`, `bu
 { "type": "circle", "x": 0.7, "y": 0.55, "w": 0.65, "fill": "#FFFFFF", "opacity": 8 }
 { "type": "rect", "x": 0.1, "y": 0.4, "w": 0.8, "h": 0.2, "radius": 0.05, "fill": { "type": "gradient", "stops": ["#fff", "#eee"] } }
 { "type": "image", "path": "input/logo.png", "x": 0.06, "y": 0.03, "w": 0.15, "h": 0.05 }
+{ "type": "polygon", "points": [[1, 0.32], [1, 1], [0, 1], [0, 0.86]], "fill": "#5B3DF5" }   // nền chia chéo (L22)
 ```
+- Mọi loại có thể thêm `rotate` (độ, chiều kim đồng hồ), ví dụ sticker nghiêng (L16).
+- `blur`: làm mờ Gaussian, bán kính = tỉ lệ × chiều rộng một ảnh (ví dụ `0.18`). Dùng cho vệt loang mềm (B03): **một** circle + blur thay cho nhiều vòng đồng tâm.
+- `blend`: chế độ hoà trộn `"screen" | "overlay" | "softLight" | "multiply" | "lighten" | "color" | "normal"`.
+- Lưu ý màu: vệt màu sáng (xanh chanh, vàng) để opacity thấp trên nền tối sẽ ngả màu xỉn / ô-liu. Trên nền tối, vệt loang nên dùng màu đậm (tím, xanh dương); màu sáng chỉ làm điểm nhấn nhỏ, opacity cao.
 - `x`, `w` tính theo **chiều rộng một ảnh**, `y`, `h` theo **chiều cao ảnh**. Bỏ `h` thì h = w (hình tròn hoặc vuông).
 - Ở cấp spec (panorama), `x = 1.5` nghĩa là giữa ảnh 2 và ảnh 3, dùng để tạo hình vắt qua mép nối.
 - `opacity` là phần trăm 0–100.
@@ -324,4 +369,6 @@ Script in ra `OK {json}` với danh sách file và `warnings`, hoặc `ERROR: �
 ## Giới hạn hiện tại
 
 - Chưa có đuôi nhọn cho bong bóng chat.
-- Máy chỉ xoay phẳng, chưa có phối cảnh 3D. Chưa hỗ trợ 3 máy trở lên: dùng `style: "mockup"` hoặc script riêng (xem phần "Khi engine không đủ" trong file agent).
+- Máy chỉ xoay phẳng, chưa có phối cảnh 3D.
+- `secondDevice` chưa hỗ trợ mockup (dùng `devices` với `screenshot` nếu cần mockup).
+- Chưa có kiểu khoanh tròn từ khoá (vẽ tay quanh chữ).

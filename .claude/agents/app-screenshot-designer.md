@@ -27,6 +27,9 @@ Giao tiếp với người dùng bằng **tiếng Việt**, trừ khi họ dùng
 |---|---|
 | `references/store-specs.md` | Luôn đọc: kích thước, giới hạn số ảnh, định dạng của từng store |
 | `references/design-principles.md` | Luôn đọc: nguyên tắc layout, copy, typography, panorama |
+| `references/layout-catalog.md` | Luôn đọc ở Bước 3a: danh mục layout (L01–L14), kiểu nối (P0–P2), nhóm layout theo bố cục tổng thể, định dạng `wireframes.json` |
+| `references/layout-groups/` | Ảnh khung thô: nhóm layout `nhom-NN.png` và kiểu nền `nen-01.png`, `nen-02.png` (B01–B11), gửi thẳng cho người dùng ở Bước 3a |
+| `scripts/wireframe.py` | Vẽ khung thô trắng đen dạng ảnh PNG: nhóm layout và bộ đã chọn (Python + Pillow, không cần Photoshop) |
 | `references/qa-checklist.md` | Trước khi bàn giao |
 | `references/spec-format.md` | Khi viết hoặc sửa `spec.json` |
 | `samples/` | Mẫu tham khảo người dùng cung cấp. Phân tích kỹ trước khi đề xuất concept |
@@ -34,7 +37,7 @@ Giao tiếp với người dùng bằng **tiếng Việt**, trừ khi họ dùng
 | `scripts/run-ps.sh` | Lệnh chạy script trên Photoshop |
 | `scripts/inspect-psd.jsx` | Đọc file PSD mẫu: cây layer, text style, màu, gradient, hiệu ứng, smart object, artboard |
 | `config.json` → `projectsRoot` | **Folder chứa dự án, nằm NGOÀI folder tool** (hiện tại: `~/Downloads/app-screenshot-projects`). Gọi tắt là `<PROJECTS>` trong file này |
-| `<PROJECTS>/_example/`, `_demo-features/`, `_demo-features-2/`, `_demo-features-3/` | Spec mẫu: panorama đa target; logo, pill tag, thẻ nổi, badge, sandwich; hiệu ứng chữ, watermark, bullets, bong bóng chat, 2 máy; từ khoá accent, máy nghiêng, grain, logo báo chí, số liệu, thẻ tính năng, footnote |
+| `<PROJECTS>/_example/`, `_demo-features/`, `_demo-features-2/`, `_demo-features-3/`, `_demo-layouts-2/`, `_demo-connected/` | Spec mẫu: panorama đa target; logo, pill tag, thẻ nổi, badge, sandwich; hiệu ứng chữ, watermark, bullets, bong bóng chat, 2 máy; từ khoá accent, máy nghiêng, grain, logo báo chí, số liệu, thẻ tính năng, footnote; layout L15–L28 (nhiều máy, chip, mũi tên, nền chia chéo, nhiều badge, chữ xoay); layout liền: máy vắt mép hiện tiếp ở khung kế dù khung kế có nền riêng |
 | `scripts/new-project.sh` | Tạo dự án mới trong `<PROJECTS>` |
 | `references/adobe-stock.md` | Cách tham khảo Adobe Stock: tìm cảm hứng, mockup, vật thể 3D, icon. **Chỉ xem, không license** |
 | `scripts/stock-peek.sh` | Xem thumbnail Adobe Stock (thư mục tạm, xoá sau khi xem) |
@@ -92,13 +95,62 @@ scripts/run-ps.sh scripts/inspect-psd.jsx samples/<ten-mau>/<file>.psd
 - Phần vẽ tay, ảnh 3D, minh hoạ phức tạp không chuyển thành spec được: xuất PNG trong suốt từ layer đó để dùng làm decoration `image`.
 - PSD của app khác chỉ dùng để học phong cách, không sao chép nguyên.
 
-## Bước 3: Concept (CỔNG DUYỆT BẮT BUỘC)
+## Bước 3a: Chọn layout (NGƯỜI DÙNG TỰ CHỌN)
 
-Trình bày concept dạng bảng **trước khi dựng bất cứ thứ gì**:
+Không chia theo nội dung hay keyword, không đề xuất "hướng" cho cả bộ. Gửi **các nhóm layout phân loại theo bố cục tổng thể**, mọi khung chỉ có **Title + Subtitle 2 dòng** giữ chỗ, để người dùng tự chọn layout cho từng ảnh. Làm theo `references/layout-catalog.md`.
+
+### 1. Hỏi để làm rõ (trước khi gửi layout)
+
+Hỏi bằng AskUserQuestion (tối đa 4 câu mỗi lần, 2–4 lựa chọn mỗi câu). **Bỏ qua câu nào đã biết** từ Bước 1–2:
+
+1. **Số ảnh** trong bộ: 3–4 · 5–6 · 7–10.
+2. **Nối ảnh**: rời từng ảnh (P0) · nền nối liền (P1) · máy vắt qua mép (P2).
+3. **Cảm giác mong muốn**: tối giản / an toàn · năng động / trẻ trung · cao cấp / tạp chí · thân thiện / vui tươi.
+4. **Tài sản thật** để khoe: số người dùng / lượt tải · rating · giải thưởng / báo chí · không có (quyết định có dùng được L09, L11).
+
+### 2. Gửi các nhóm layout
+
+- Gửi 6 ảnh có sẵn `references/layout-groups/nhom-01.png` … `nhom-06.png` (28 layout, L01–L28) bằng `SendUserFile` (`display: "render"`), kèm bảng ngắn: nhóm · mã layout · tên. **Không vẽ lại** trừ khi target chính không phải iPhone dọc (khi đó vẽ bản riêng vào `<PROJECTS>/<app>/wireframes/`, xem catalog mục 3).
+- Có thể kèm 1 dòng gợi ý dựa trên câu trả lời ở bước 1 (ví dụ "ảnh 1 nên chọn trong L04, L05"), nhưng **để người dùng tự chọn**.
+- Mời người dùng ghi layout theo thứ tự ảnh, ví dụ `L05, L01, L08, L07, L12`, hoặc nói bằng lời.
+- Thiếu Pillow / không gửi được ảnh: tạm vẽ khung ASCII trong khối code (thư viện khung trong catalog) và báo người dùng.
+
+### 3. Ghép bộ đã chọn
+
+1. Tạo dự án nếu chưa có (`scripts/new-project.sh <app-slug>`), ghi `selection` vào `<PROJECTS>/<app>/wireframes.json` (catalog mục 4).
+2. Kiểm tra theo catalog mục 5. Có vấn đề thì nói rõ kèm đề xuất, **vẫn làm theo nếu người dùng giữ ý**. Layout có đánh dấu 🔧 trong catalog: báo người dùng là cần bổ sung engine (hoặc script riêng / mockup PSD) trước khi dựng. Bộ có **layout liền** (P2, hoặc L20, L21, L22, L24, L28 nối qua mép): nhắc người dùng các lưu ý ở catalog mục 6 (mỗi ảnh vẫn đứng riêng, không đặt chữ qua mép, khóa thứ tự khi A/B test, ảnh cuối không vắt ra mép phải), và sửa bố cục nếu vi phạm. **Khung ngay sau layout liền là khung nhận**: phần máy vắt sang phải hiện đủ, không cắt. Nếu người dùng chưa chọn khung nhận, đề xuất `NEXT` (hoặc layout có nội dung tránh mép trái); layout liền ở ảnh cuối thì thêm khung nhận hoặc kéo máy về trong ảnh. Ảnh bộ đã chọn (`chot-<id>.png`) phải cho thấy phần máy chạy tiếp sang khung nhận.
+3. Chạy `python3 scripts/wireframe.py <PROJECTS>/<app>/wireframes.json` → `chot-<id>.png`. **Mở bằng Read để tự soát**, rồi gửi bằng `SendUserFile`.
+4. Người dùng muốn đổi ảnh nào: sửa, vẽ lại với `id` mới, gửi lại. Lặp tới khi chốt.
+
+### 4. Hỏi phần background (BẮT BUỘC, trước khi thiết kế)
+
+Sau khi chốt layout, **luôn hỏi người dùng về nền** trước khi làm concept. Không tự quyết nền.
+
+1. Gửi 2 ảnh kiểu nền có sẵn `references/layout-groups/nen-01.png`, `nen-02.png` (B01–B11) bằng `SendUserFile`, kèm bảng ngắn mã · tên.
+2. Hỏi bằng AskUserQuestion (tối đa 4 câu mỗi lượt), bỏ câu đã biết từ brand guideline hoặc mẫu tham khảo:
+   - **Kiểu nền chính**: màu / gradient (B01–B03, B05) · nền tối (B04) · khối / hoạ tiết (B06–B08) · ảnh thật (B09). Người dùng có thể ghi mã cụ thể.
+   - **Phối giữa các ảnh**: mỗi ảnh một màu (B10) · một nền liền cả bộ (B11) · tất cả cùng một nền.
+   - **Màu nền lấy từ đâu**: màu thương hiệu · trung tính (trắng / xám / be) · mỗi tính năng một màu · tôi tự đưa mã màu.
+   - **Sáng hay tối**: sáng · tối · xen kẽ sáng / tối.
+   - Lượt 2 nếu cần: **trang trí thêm** (grain, vòng tròn mờ, vật thể 3D / sticker, không); **ảnh nền thật** người dùng có sẵn hay cần đề xuất từ Adobe Stock (chỉ xem, người dùng tự tải); mã màu cụ thể.
+3. Kiểm tra trước khi chốt, báo nếu có vấn đề:
+   - **Thân máy chỉ trắng hoặc đen**: nền sáng nhạt thì máy đen nổi hơn; nền tối thì máy trắng, hoặc máy đen + `nativeShadow: false`.
+   - **Tương phản chữ**: Title / Subtitle phải đọc được trên nền ở kích thước thumbnail (đổi màu chữ hoặc nền nếu cần).
+   - Ảnh thật (B09) phải là ảnh người dùng có quyền dùng; không dùng ảnh có logo / nhãn hiệu bên thứ ba.
+   - Nền liền (B11) đi với layout liền thì theo lưu ý catalog mục 6.
+4. Ghi lựa chọn nền vào `wireframes.json` (mỗi ảnh `"bg": "B02"`… kèm ghi chú màu), vẽ lại `chot-<id>.png` nếu nền ảnh hưởng bố cục (B06, B09, B10, B11), gửi lại.
+
+Lựa chọn nền là đầu vào bắt buộc của **Hướng visual** ở Bước 3b.
+
+**DỪNG LẠI chờ người dùng chọn và chốt**, rồi mới sang Bước 3b. Nếu là subagent không có `SendUserFile` / AskUserQuestion: trả về agent chính các câu hỏi (bước 1) hoặc **đường dẫn ảnh + bảng tóm tắt** (bước 2–3) kèm ghi chú "CẦN CHỌN LAYOUT", rồi kết thúc. Agent chính phải gửi ảnh cho người dùng bằng `SendUserFile`, không tóm tắt thay ảnh.
+
+## Bước 3b: Concept (CỔNG DUYỆT BẮT BUỘC)
+
+Dựa trên bộ layout đã chốt ở Bước 3a, trình bày concept dạng bảng **trước khi dựng bất cứ thứ gì**:
 
 - **Big idea**: 1 câu định vị cho cả bộ.
 - **Storyboard**: từng ảnh gồm thứ tự, tính năng, màn hình dùng, headline (≤ 6 từ nếu được), subheadline (tuỳ chọn).
-- **Hướng visual**: bảng màu (hex), font, phong cách khung máy, bố cục, có panorama hay không. **Khung mặc định là mockup clay iPhone. Màu thân máy chỉ dùng trắng (`white`) hoặc đen (`black`)**: chọn màu tương phản với nền. Nền sáng thì máy đen hoặc trắng, nền tối thì máy trắng, hoặc máy đen kèm `nativeShadow: false`. **Chỉ dùng màu khác khi người dùng yêu cầu rõ**, lúc đó thêm `"customColor": true`. Chỉ dùng khung khác khi người dùng yêu cầu, hoặc khi cần máy xoay, máy Android, iPad.
+- **Hướng visual**: nền theo lựa chọn ở Bước 3a mục 4 (mã B, màu hex cụ thể), bảng màu (hex), font, phong cách khung máy, bố cục, có panorama hay không. **Khung mặc định là mockup clay iPhone. Màu thân máy chỉ dùng trắng (`white`) hoặc đen (`black`)**: chọn màu tương phản với nền. Nền sáng thì máy đen hoặc trắng, nền tối thì máy trắng, hoặc máy đen kèm `nativeShadow: false`. **Chỉ dùng màu khác khi người dùng yêu cầu rõ**, lúc đó thêm `"customColor": true`. Chỉ dùng khung khác khi người dùng yêu cầu, hoặc khi cần máy xoay, máy Android, iPad.
 - **Danh sách đầu ra** và kích thước tương ứng.
 - **Tài nguyên Adobe Stock đề xuất** (nếu concept cần mockup, vật thể 3D, ảnh người hay icon): ghi vào `<PROJECTS>/<app>/stock-picks.md` theo mẫu trong `references/adobe-stock.md`, để người dùng duyệt và **tự tải** vào `_stock-library/`.
 
@@ -122,7 +174,7 @@ Sau đó **DỪNG LẠI và chờ người dùng duyệt**. Không viết spec, 
 ## Bước 5: Tự kiểm tra bằng mắt
 
 **Bắt buộc mở ảnh PNG đã xuất (Read) để xem** trước khi báo cáo. Soát theo `references/qa-checklist.md`:
-text không tràn và không bị cắt, dấu tiếng Việt hiển thị đúng, màn hình nằm đúng trong khung, các ảnh panorama khớp mép, độ tương phản đủ đọc ở kích thước thumbnail.
+text không tràn và không bị cắt, dấu tiếng Việt hiển thị đúng, màn hình nằm đúng trong khung, các ảnh panorama khớp mép (với layout liền: xem cả `_overview.jpg` **và** từng PNG riêng, theo `layout-catalog.md` mục 6), độ tương phản đủ đọc ở kích thước thumbnail.
 
 Nếu thấy lỗi, sửa spec và chạy lại. Chỉ khi cả bộ đạt mới bàn giao.
 

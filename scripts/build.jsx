@@ -36,20 +36,43 @@
 
     // ---------- Decorations ----------
     // d: { type:"circle"|"rect"|"image", x,y,w,h (x,w in slide widths; y,h in canvas heights), fill, opacity, radius (fraction of W), path }
+    // polygon: { type:"polygon", points:[[x,y],...] (x in slide widths, y in canvas heights), fill, opacity }
+    // any type: rotate (degrees, clockwise) around its own center
     function addDecoration(d, ox, W, H, name) {
-        var x = ox + d.x * W, y = d.y * H, w = d.w * W, h = (d.h !== undefined ? d.h * H : d.w * W);
-        if (d.type === 'image') {
-            var l = A.placeFile(A.resolvePath(BASE, d.path), name);
-            A.fitLayer(l, { x: x, y: y, w: w, h: h }, d.fit || 'contain');
-            if (d.opacity !== undefined) l.opacity = d.opacity;
-            return l;
+        var l;
+        if (d.type === 'polygon') {
+            var pts = [];
+            for (var k = 0; k < d.points.length; k++) pts.push([ox + d.points[k][0] * W, d.points[k][1] * H]);
+            l = A.polygon(name, pts, d.fill || '#ffffff', d.opacity);
+        } else {
+            var x = ox + d.x * W, y = d.y * H, w = d.w * W, h = (d.h !== undefined ? d.h * H : d.w * W);
+            if (d.type === 'image') {
+                l = A.placeFile(A.resolvePath(BASE, d.path), name);
+                A.fitLayer(l, { x: x, y: y, w: w, h: h }, d.fit || 'contain');
+                if (d.opacity !== undefined) l.opacity = d.opacity;
+            } else {
+                l = A.shape(name, x, y, w, h, {
+                    ellipse: d.type === 'circle' || d.type === 'ellipse',
+                    radius: (d.radius || 0) * W,
+                    fill: d.fill || '#ffffff',
+                    opacity: d.opacity
+                });
+            }
         }
-        return A.shape(name, x, y, w, h, {
-            ellipse: d.type === 'circle' || d.type === 'ellipse',
-            radius: (d.radius || 0) * W,
-            fill: d.fill || '#ffffff',
-            opacity: d.opacity
-        });
+        if (d.rotate) l.rotate(d.rotate, AnchorPosition.MIDDLECENTER);
+        // blur: Gaussian radius as a fraction of the slide width (soft glows / mesh-like blobs, B03)
+        if (d.blur) {
+            l.rasterize(RasterizeType.ENTIRELAYER);
+            l.applyGaussianBlur(Math.min(1000, Math.max(0.1, d.blur * W)));
+        }
+        // blend: "screen" | "overlay" | "softLight" | "multiply" | "lighten" | "color" | "normal"
+        if (d.blend) {
+            var BM = { screen: BlendMode.SCREEN, overlay: BlendMode.OVERLAY, softLight: BlendMode.SOFTLIGHT, multiply: BlendMode.MULTIPLY,
+                       lighten: BlendMode.LIGHTEN, color: BlendMode.COLORBLEND, normal: BlendMode.NORMAL };
+            if (BM[d.blend]) l.blendMode = BM[d.blend];
+            else A.warnings.push(name + ': unknown blend "' + d.blend + '"');
+        }
+        return l;
     }
 
     // ---------- Text block ----------
@@ -447,6 +470,27 @@
         return t;
     }
 
+    // ---------- Free chips (pill labels placed anywhere) ----------
+    // ch: { text, x, y (anchor, fractions of slide), align:"left"|"center"|"right" (which side x anchors), icon, fill, color, opacity, scale, outline }
+    function addChip(ch, idx, ox, W, H, sSize, font) {
+        if (typeof ch === 'string') ch = { text: ch };
+        var c = A.extend(ch);
+        if (c.fill === undefined) c.fill = '#111318';
+        if (c.color === undefined) c.color = '#FFFFFF';
+        if (c.opacity === undefined) c.opacity = 100;
+        var layers = addEyebrow(c, H * (c.y === undefined ? 0.1 : c.y), c.align || 'left', ox + W * (c.x === undefined ? 0.07 : c.x), 0, sSize * 0.85, font);
+        for (var k = 0; k < layers.length; k++) layers[k].name = 'Chip ' + idx + ' ' + layers[k].name;
+        return layers;
+    }
+
+    // ---------- Hand-drawn style arrow ----------
+    // ar: { from:[x,y], to:[x,y] (fractions of slide), bend (+ = curves to the right of travel), width, head (x W), color, opacity }
+    function addArrow(ar, idx, ox, W, H, theme) {
+        var polys = A.arrowPolys(ox + ar.from[0] * W, ar.from[1] * H, ox + ar.to[0] * W, ar.to[1] * H,
+            ar.bend === undefined ? 0.3 : ar.bend, W * (ar.width || 0.008), W * (ar.head || 0.035));
+        return A.polygon('Arrow ' + idx, polys, ar.color || theme.headlineColor || '#111111', ar.opacity);
+    }
+
     // Groups a device's layers (clipping kept) and rotates them together.
     function rotateDevice(doc, md, angle, name) {
         var g = A.newGroup(doc, name);
@@ -454,6 +498,92 @@
         for (var c = 0; c < md.clips.length; c++) md.clips[c].grouped = true;
         g.rotate(angle, AnchorPosition.MIDDLECENTER);
         return { layers: [g], clips: [] };
+    }
+
+    // Mockup description: a preset JSON (next to the PSD) or an inline { psd, smartObject, ... }; spec values override the preset.
+    function resolveMockup(m) {
+        var mk = deepMerge(m, {});
+        if (mk.preset) {
+            var presetFile = new File(A.resolvePath(BASE, mk.preset));
+            var preset = A.readJSON(presetFile);
+            preset.psd = A.resolvePath(presetFile.parent.fsName, preset.psd);
+            var own = deepMerge(m, {});
+            delete own.preset;
+            mk = deepMerge(preset, own);
+            if (own.psd) mk.psd = A.resolvePath(BASE, own.psd);
+        } else {
+            mk.psd = A.resolvePath(BASE, mk.psd);
+        }
+        return mk;
+    }
+
+    // ---------- Extra devices (3+ phones: fan, grid, row) ----------
+    // ed: { screenshot, x, y (center, fractions of slide), w (x W), rotate (deg, clockwise), placeholderLabel, z:"back"|"front" }
+    // Uses the slide's device style; a mockup needs a screenshot, otherwise the vector frame is used.
+    function addExtraDevice(doc, ed, idx, dev, t, ox, W, H, slideIdx, subFont) {
+        var name = 'Device +' + idx;
+        var shotP = ed.screenshot ? A.resolvePath(BASE, ed.screenshot) : null;
+        var w = W * (ed.w || 0.5), cx = ox + (ed.x === undefined ? 0.5 : ed.x) * W, cy = (ed.y === undefined ? 0.5 : ed.y) * H;
+        // ed.style overrides the slide style (e.g. "mockup" on a slide whose main device is "none")
+        var style = ed.style || (dev.style === 'none' ? 'frame' : dev.style);
+        if (style === 'mockup' && shotP && dev.mockup) {
+            var tmp = Folder.temp.fsName + '/asd_mockup_' + slideIdx + '_x' + idx + '.png';
+            A.renderMockup(resolveMockup(dev.mockup), shotP, tmp);
+            var mock = A.placeFile(tmp, name + ' (mockup)');
+            var mb = A.bounds(mock), h = w * mb.h / mb.w;
+            A.fitLayer(mock, { x: cx - w / 2, y: cy - h / 2, w: w, h: h }, 'contain');
+            if (dev.shadow) { doc.activeLayer = mock; A.dropShadow(shadowOpts(dev, W)); }
+            if (ed.rotate) mock.rotate(ed.rotate, AnchorPosition.MIDDLECENTER);
+            return { layers: [mock], clips: [] };
+        }
+        var d2 = A.extend(dev); d2.style = style === 'mockup' ? 'frame' : style;
+        var shot = shotP ? A.placeFile(shotP, 'Screenshot +' + idx) : null;
+        var asp = shot ? A.bounds(shot).w / A.bounds(shot).h : (t.platform === 'ipad' ? 0.75 : 0.4603);
+        var bez = d2.style === 'frame' ? w * d2.bezel : 0;
+        var h2 = (w - 2 * bez) / asp + 2 * bez;
+        var md = makeDevice(d2, t, W, shot, cx - w / 2, cy - h2 / 2, w, h2, bez, ed.placeholderLabel || ('Screen +' + idx), subFont, name);
+        if (ed.rotate) md = rotateDevice(doc, md, ed.rotate, name);
+        return md;
+    }
+
+    // Devices that cross a slide edge (filled by buildSlide, consumed per target).
+    var CROSS = [];
+
+    // For every device group that crosses into a neighbouring slide, put a pixel copy of the
+    // overflowing part inside that neighbour, just above its own background, so the neighbour's
+    // background never hides it ("the next frame shows the remaining edge, not cut off").
+    function continueAcrossEdges(doc, groups, W, H) {
+        for (var k = 0; k < CROSS.length; k++) {
+            var c = CROSS[k];
+            var sides = [];
+            if (c.right) sides.push(c.slide + 1);
+            if (c.left) sides.push(c.slide - 1);
+            for (var q = 0; q < sides.length; q++) {
+                var n = sides[q];
+                if (n < 0 || n >= groups.length) {
+                    A.warnings.push('Slide ' + (c.slide + 1) + ': device crosses the ' + (n < 0 ? 'left' : 'right') +
+                        ' edge of the set and will be cut (no neighbouring slide)');
+                    continue;
+                }
+                var ng = groups[n], anchor = null;
+                for (var a = 0; a < ng.layers.length; a++) {
+                    var nm = ng.layers[a].name;
+                    if (nm === 'Grain' || nm === 'Background') { anchor = ng.layers[a]; break; }
+                }
+                if (!anchor) continue;           // panorama: no own background, the original already shows through
+                var dup = c.layer.duplicate();
+                var px = dup.merge();
+                px.name = 'Continued from slide ' + (c.slide + 1);
+                px.move(anchor, ElementPlacement.PLACEBEFORE);
+                var nx = n * W;
+                doc.selection.select([[nx, 0], [nx + W, 0], [nx + W, H], [nx, H]]);
+                doc.selection.invert();
+                doc.activeLayer = px;
+                try { doc.selection.clear(); } catch (e) {}
+                doc.selection.deselect();
+            }
+        }
+        CROSS = [];
     }
 
     // ---------- One slide ----------
@@ -607,19 +737,7 @@
                 }
             }
             if (dev.style === 'mockup') {
-                var mk = deepMerge(dev.mockup, {});
-                if (mk.preset) {
-                    // a reusable mockup description (JSON next to the PSD); spec values override it
-                    var presetFile = new File(A.resolvePath(BASE, mk.preset));
-                    var preset = A.readJSON(presetFile);
-                    preset.psd = A.resolvePath(presetFile.parent.fsName, preset.psd);
-                    var own = deepMerge(dev.mockup, {});
-                    delete own.preset;
-                    mk = deepMerge(preset, own);
-                    if (own.psd) mk.psd = A.resolvePath(BASE, own.psd);
-                } else {
-                    mk.psd = A.resolvePath(BASE, mk.psd);
-                }
+                var mk = resolveMockup(dev.mockup);
                 var tmp = Folder.temp.fsName + '/asd_mockup_' + i + '.png';
                 A.renderMockup(mk, shotPath, tmp);
                 var mock = A.placeFile(tmp, 'Device (mockup)');
@@ -671,6 +789,30 @@
             }
         }
 
+        // ---- Extra devices ----
+        var eds = slide.devices || [];
+        var backDev = [], frontDev = [];
+        for (var ei = 0; ei < eds.length; ei++) {
+            var emd = addExtraDevice(doc, eds[ei], ei + 1, dev, t, ox, W, H, i, subFont);
+            if (eds[ei].z === 'front') frontDev = frontDev.concat(emd.layers); else backDev = backDev.concat(emd.layers);
+            clips = clips.concat(emd.clips);
+        }
+        devLayers = backDev.concat(devLayers).concat(frontDev);
+
+        // ---- Connected layouts: devices crossing the slide edge are grouped so the part that
+        // falls on the neighbouring slide can be copied there (see continueAcrossEdges) ----
+        var du = devLayers.length ? A.unionBounds(devLayers) : null;
+        if (du && slide.crossEdge !== 'clip') {          // crossEdge:"clip" = keep the old behaviour (neighbour's background hides the overflow)
+            var tol = W * 0.005;
+            var crossR = du.r > ox + W + tol, crossL = du.x < ox - tol;
+            if (crossR || crossL) {
+                var cg = A.newGroup(doc, 'Devices (cross edge)');
+                for (var cgi = 0; cgi < devLayers.length; cgi++) A.addToGroup(cg, devLayers[cgi]);
+                devLayers = [cg];
+                CROSS.push({ slide: i, layer: cg, right: crossR, left: crossL });
+            }
+        }
+
         // ---- Callout cards ----
         var calloutLayers = [];
         var callouts = slide.callouts || [];
@@ -693,7 +835,26 @@
         if (slide.stats) extra = extra.concat(addStats(slide.stats, ox, W, H, fonts, theme));
         if (slide.pressLogos && slide.pressLogos.y !== undefined) extra = extra.concat(addLogoRow(slide.pressLogos, ox, W, H, fonts, theme));
         if (slide.footnote) extra.push(addFootnote(slide.footnote, ox, W, H, subFont, theme));
-        if (slide.badge) extra.push(addBadge(slide.badge, ox, W, H, fonts, theme));
+        var badges = slide.badge ? ((slide.badge instanceof Array) ? slide.badge : [slide.badge]) : [];
+        for (var bgi = 0; bgi < badges.length; bgi++) extra.push(addBadge(badges[bgi], ox, W, H, fonts, theme));
+        var chips = slide.chips || [];
+        for (var chi = 0; chi < chips.length; chi++) extra = extra.concat(addChip(chips[chi], chi + 1, ox, W, H, sSize, subFont));
+        var arrows = slide.arrows || [];
+        for (var ari = 0; ari < arrows.length; ari++) extra.push(addArrow(arrows[ari], ari + 1, ox, W, H, theme));
+
+        // ---- Rotated text block (typography.rotate, degrees clockwise) ----
+        if (typo.rotate && (topLayers.length || bottomLayers.length)) {
+            var tg = A.newGroup(doc, 'Text (rotated)');
+            var tl2 = topLayers.concat(bottomLayers);
+            for (var tri = 0; tri < tl2.length; tri++) A.addToGroup(tg, tl2[tri]);
+            tg.rotate(typo.rotate, AnchorPosition.MIDDLECENTER);
+            var tgb = A.bounds(tg);
+            if (typo.rotateX !== undefined || typo.rotateY !== undefined) {
+                var gcx = ox + W * (typo.rotateX === undefined ? 0.5 : typo.rotateX), gcy = H * (typo.rotateY === undefined ? 0.5 : typo.rotateY);
+                tg.translate(gcx - (tgb.x + tgb.w / 2), gcy - (tgb.y + tgb.h / 2));
+            }
+            topLayers = [tg]; bottomLayers = [];
+        }
 
         // ---- Stack order: background -> decorations/watermark -> device -> callouts/bubbles -> text -> badge ----
         stack = stack.concat(devLayers).concat(calloutLayers).concat(topLayers).concat(bottomLayers).concat(extra);
@@ -726,10 +887,14 @@
                     for (var d = 0; d < pdecos.length; d++) A.addToGroup(dg, addDecoration(pdecos[d], 0, W, H, 'Deco ' + (d + 1)));
                 }
             }
+            var groups = [];
+            CROSS = [];
             for (var i = 0; i < N; i++) {
                 var g = buildSlide(doc, cfg, t, slides[i], i, i * W);
                 g.move(doc.layers[0], ElementPlacement.PLACEBEFORE);
+                groups.push(g);
             }
+            continueAcrossEdges(doc, groups, W, H);
 
             var dir = OUT + '/' + t.id;
             A.ensureFolder(OUT + '/psd');
@@ -738,7 +903,9 @@
 
             var files = [];
             for (var j = 0; j < N; j++) {
-                var p = dir + '/' + n2(j) + '_' + A.slug(slides[j].headline) + '.png';
+                var hj = slides[j].headline, hs = hj;
+                if (hj instanceof Array) { hs = []; for (var hk = 0; hk < hj.length; hk++) hs.push(typeof hj[hk] === 'string' ? hj[hk] : hj[hk].text); hs = hs.join(' '); }
+                var p = dir + '/' + n2(j) + '_' + A.slug(hs || slides[j].subheadline) + '.png';
                 A.exportSlice(doc, j * W, 0, W, H, p);
                 files.push(p);
             }

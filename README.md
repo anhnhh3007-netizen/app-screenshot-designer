@@ -12,7 +12,7 @@ Agent không vẽ tay. Nó viết một file `spec.json` rồi **điều khiển
 
 - macOS, **Adobe Photoshop 2024** trở lên
 - Claude Code (CLI hoặc desktop app)
-- `python3` (có sẵn trên macOS)
+- `python3` (có sẵn trên macOS) và Pillow để vẽ khung thô layout: `pip3 install --user pillow`
 
 ## Cài đặt
 
@@ -33,18 +33,20 @@ Mở Claude Code trong folder này rồi nói, ví dụ:
 Agent sẽ:
 1. Hỏi thông tin app, đầu ra cần làm, ngôn ngữ copy
 2. Phân tích mẫu tham khảo trong `samples/` (ảnh hoặc PSD)
-3. **Trình concept để bạn duyệt** (bắt buộc, chưa duyệt thì chưa dựng)
-4. Tạo dự án, viết `spec.json`, dựng PSD và xuất PNG
-5. Tự mở ảnh ra soát theo checklist QA rồi bàn giao
+3. **Hỏi làm rõ**, rồi gửi **các nhóm layout theo bố cục tổng thể** (khung thô trắng đen, Title + Subtitle 2 dòng); bạn tự chọn layout cho từng ảnh, ví dụ `L05, L01, L08`, rồi **hỏi phần background** (11 kiểu nền B01–B11)
+4. **Trình concept để bạn duyệt** (bắt buộc, chưa duyệt thì chưa dựng)
+5. Tạo dự án, viết `spec.json`, dựng PSD và xuất PNG
+6. Tự mở ảnh ra soát theo checklist QA rồi bàn giao
 
 ## Cấu trúc
 
 ```
 .claude/agents/app-screenshot-designer.md   persona và quy trình của agent
-references/      kích thước store, nguyên tắc thiết kế, checklist QA, định dạng spec.json
+references/      kích thước store, nguyên tắc thiết kế, danh mục layout, checklist QA, định dạng spec.json
 scripts/
   build.jsx        engine: spec.json → PSD + PNG
   inspect-psd.jsx  đọc PSD mẫu: layer, font, màu, gradient, hiệu ứng, artboard
+  wireframe.py     vẽ khung thô trắng đen: nhóm layout, kiểu nền, bộ đã chọn (Python + Pillow)
   list-fonts.jsx   tìm font có trên máy
   lib/asd.jsx      thư viện hàm Photoshop dùng chung
   run-ps.sh        chạy .jsx trên Photoshop qua osascript

@@ -1,0 +1,189 @@
+{
+  "aspect": [
+    1290,
+    2796
+  ],
+  "groups": [
+    {
+      "name": "Text trên, máy dưới",
+      "desc": "Đọc Title trước rồi nhìn màn hình. An toàn, dễ đọc ở thumbnail.",
+      "layouts": [
+        {
+          "layout": "L01",
+          "note": "Máy nằm gọn, cân đối"
+        },
+        {
+          "layout": "L04",
+          "note": "Máy to, tràn mép dưới"
+        },
+        {
+          "layout": "L05",
+          "rotate": -14,
+          "note": "Máy nghiêng, năng động"
+        },
+        {
+          "layout": "L13",
+          "watermark": "AI",
+          "note": "Chữ lớn mờ phía sau máy"
+        }
+      ]
+    },
+    {
+      "name": "Máy trên, text dưới",
+      "desc": "Màn hình là điểm nhìn đầu tiên. Dùng để phá nhịp hoặc tạo cảm giác tạp chí.",
+      "layouts": [
+        {
+          "layout": "L02",
+          "note": "Máy tràn mép trên, Title ở đáy"
+        },
+        {
+          "layout": "L03",
+          "note": "Sandwich: Subtitle trên, Title to ở đáy"
+        },
+        {
+          "layout": "L14",
+          "sub": false,
+          "note": "Chỉ máy, không chữ"
+        }
+      ]
+    },
+    {
+      "name": "Máy + chi tiết nổi",
+      "desc": "Máy kèm yếu tố phụ để nhấn một điểm: màn hình thứ hai, thẻ UI, chat, số liệu.",
+      "layouts": [
+        {
+          "layout": "L06",
+          "note": "Hai máy chồng nhau"
+        },
+        {
+          "layout": "L07",
+          "note": "Thẻ UI nổi ra ngoài máy"
+        },
+        {
+          "layout": "L08",
+          "note": "Bong bóng chat"
+        },
+        {
+          "layout": "L11",
+          "note": "Cột số liệu bên cạnh máy (chỉ số thật)"
+        },
+        {
+          "layout": "L17",
+          "note": "Dải thumbnail chạy ngang, đè mép dưới máy"
+        },
+        {
+          "layout": "L19",
+          "note": "Text trái, chip nhãn + mũi tên chỉ vào máy nghiêng"
+        }
+      ]
+    },
+    {
+      "name": "Không máy",
+      "desc": "Kể bằng chữ, badge, thẻ, danh sách. Hợp ảnh mở đầu hoặc ảnh kết.",
+      "layouts": [
+        {
+          "layout": "L09",
+          "note": "Logo + badge social proof (chỉ số thật)"
+        },
+        {
+          "layout": "L10",
+          "note": "Danh sách lợi ích có icon"
+        },
+        {
+          "layout": "L12",
+          "note": "Logo + thẻ tính năng lớn"
+        },
+        {
+          "layout": "L16",
+          "note": "Vật thể / sticker rải quanh Title (cần PNG)"
+        },
+        {
+          "layout": "L25",
+          "note": "3 dòng đánh giá có nguyệt quế, chỉ đánh giá thật"
+        },
+        {
+          "layout": "L26",
+          "note": "Thẻ trích dẫn lớn + người nói"
+        }
+      ]
+    },
+    {
+      "name": "Nhiều máy",
+      "desc": "Từ 2 máy / màn hình trở lên, xếp quạt, chồng, lưới hoặc hàng ngang.",
+      "layouts": [
+        {
+          "layout": "L15",
+          "note": "Quạt màn hình xoè sau máy"
+        },
+        {
+          "layout": "L20",
+          "note": "Cặp máy nghiêng + chip nhãn, không Title. Liền: máy vắt sang ảnh kế",
+          "pair": true,
+          "offsetX": 0.22
+        },
+        {
+          "layout": "L21",
+          "note": "Máy khổng lồ nghiêng vắt sang ảnh kế. Liền: luôn dùng theo cặp (P2)",
+          "pair": true,
+          "next": {
+            "layout": "NEXT",
+            "textTop": true
+          }
+        },
+        {
+          "layout": "L24",
+          "note": "Lưới máy lặp làm hoạ tiết + khung Title. Liền nếu lưới phủ nhiều ảnh",
+          "pair": true,
+          "next": {
+            "layout": "L24",
+            "sub": true,
+            "headline": "Title"
+          }
+        },
+        {
+          "layout": "L28",
+          "note": "Ba máy hàng ngang, máy giữa đủ, hai bên bị cắt. Liền nếu máy bên là máy của ảnh kế",
+          "pair": true,
+          "next": {
+            "layout": "NEXT"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Nền & chữ làm chủ đạo",
+      "desc": "Nền ảnh, nền chia khối hoặc chữ là điểm nhìn chính.",
+      "layouts": [
+        {
+          "layout": "L18",
+          "note": "Ảnh thật tràn nền, máy ở dưới, Title đặt trên màn hình"
+        },
+        {
+          "layout": "L22",
+          "note": "Nền chia chéo 2 mảng, Title trong mảng màu. Liền nếu đường chéo chạy tiếp sang ảnh kế"
+        },
+        {
+          "layout": "L23",
+          "note": "Title khổng lồ căn trái, máy chỉ ló góc"
+        },
+        {
+          "layout": "L27",
+          "note": "Title xoay cùng góc với máy"
+        }
+      ]
+    }
+  ],
+  "selection": {
+    "picks": [
+      "L05",
+      "L01",
+      "L08",
+      "L07",
+      "L12"
+    ],
+    "connect": "P1",
+    "id": "vi-du",
+    "why": "Ví dụ ghép bộ 5 ảnh từ các nhóm.",
+    "tradeoff": "4 loại layout: giữ cùng cỡ Title và vị trí để đồng bộ."
+  }
+}

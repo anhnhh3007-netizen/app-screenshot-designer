@@ -1,0 +1,24 @@
+{
+  "aspect": [1290, 2796],
+  "groups": [
+    { "file": "nen-01.png", "title": "Kiểu nền 1 · Màu & chuyển sắc", "desc": "Nền vẽ bằng màu. Ảnh trắng đen chỉ minh hoạ kiểu nền; màu thật chọn ở bước concept.",
+      "layouts": [
+        { "layout": "L01", "bg": "solid", "label": "B01 · Đơn sắc", "note": "Một màu phẳng. Gọn, dễ đọc, hợp mọi app" },
+        { "layout": "L01", "bg": "gradient", "label": "B02 · Gradient dọc", "note": "Chuyển sắc trên xuống dưới, có chiều sâu nhẹ" },
+        { "layout": "L01", "bg": "mesh", "label": "B03 · Gradient loang", "note": "Mảng màu loang mềm (mesh), cảm giác hiện đại" },
+        { "layout": "L01", "bg": "dark", "label": "B04 · Nền tối", "note": "Nền tối, chữ trắng. Máy đen cần tắt bóng gốc của mockup" },
+        { "layout": "L01", "bg": "grain", "label": "B05 · Nhiễu hạt (grain)", "note": "Thêm hạt mịn lên màu / gradient, cảm giác cao cấp" }
+      ]},
+    { "file": "nen-02.png", "title": "Kiểu nền 2 · Khối, ảnh & nối ảnh", "desc": "Nền có hình khối, ảnh thật, hoạ tiết, hoặc cách phối màu giữa các ảnh.",
+      "layouts": [
+        { "layout": "L01", "bg": "split", "label": "B06 · Chia khối", "note": "Nền chia 2 mảng bằng đường chéo hoặc thẳng" },
+        { "layout": "L01", "bg": "deco", "label": "B07 · Hoạ tiết trang trí", "note": "Vòng tròn mờ, blob, hình khối, vật thể 3D (cần PNG)" },
+        { "layout": "L01", "bg": "pattern", "label": "B08 · Hoạ tiết lặp", "note": "Chấm / lưới lặp đều, nhẹ phía sau" },
+        { "layout": "L04", "bg": "photo", "label": "B09 · Ảnh thật", "note": "Ảnh chụp làm nền (bạn cung cấp hoặc tự tải từ Stock)" },
+        { "layout": "L01", "bg": "solid", "tone": 232, "pair": true, "pairLabel": "ảnh kế", "label": "B10 · Mỗi ảnh một màu",
+          "next": { "layout": "L01", "bg": "solid", "tone": 175 }, "note": "Mỗi ảnh một màu (xen kẽ sáng / đậm hoặc theo tính năng)" },
+        { "layout": "L01", "bg": "panorama", "pair": true, "pairLabel": "ảnh kế", "label": "B11 · Nền liền cả bộ",
+          "next": { "layout": "L01" }, "note": "Một gradient / hình khối chạy liền qua tất cả ảnh (panorama)" }
+      ]}
+  ]
+}

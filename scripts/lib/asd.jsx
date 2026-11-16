@@ -186,6 +186,69 @@ var ASD = ASD || {};
         return layer;
     };
 
+    // Shape layer from one or more polygons. polys: [[x,y],[x,y],...] or [[[x,y],...],[[x,y],...]] (pixels).
+    // Builds a temporary work path, makes a fill layer from it (vector mask), then removes the path.
+    A.polygon = function (name, polys, fill, opacity) {
+        var doc = app.activeDocument;
+        if (typeof polys[0][0] === 'number') polys = [polys];
+        var subs = [];
+        for (var p = 0; p < polys.length; p++) {
+            var pts = [];
+            for (var i = 0; i < polys[p].length; i++) {
+                var pp = new PathPointInfo();
+                pp.kind = PointKind.CORNERPOINT;
+                pp.anchor = [polys[p][i][0], polys[p][i][1]];
+                pp.leftDirection = pp.anchor;
+                pp.rightDirection = pp.anchor;
+                pts.push(pp);
+            }
+            var sp = new SubPathInfo();
+            sp.closed = true;
+            sp.operation = ShapeOperation.SHAPEADD;
+            sp.entireSubPath = pts;
+            subs.push(sp);
+        }
+        var prevUnits = app.preferences.rulerUnits;
+        app.preferences.rulerUnits = Units.PIXELS;
+        var path = doc.pathItems.add('ASD tmp path', subs);
+        app.preferences.rulerUnits = prevUnits;
+        path.select();
+        var desc = new ActionDescriptor(), ref = new ActionReference();
+        ref.putClass(sTID('contentLayer'));
+        desc.putReference(cTID('null'), ref);
+        var ld = new ActionDescriptor(), ft = fillTypeDesc(fill || '#000000');
+        ld.putObject(cTID('Type'), ft.cls, ft.desc);
+        desc.putObject(cTID('Usng'), sTID('contentLayer'), ld);
+        executeAction(cTID('Mk  '), desc, DialogModes.NO);
+        var layer = doc.activeLayer;
+        try { path.remove(); } catch (e) {}
+        layer.name = name;
+        if (opacity !== undefined) layer.opacity = opacity;
+        return layer;
+    };
+
+    // Polygon outline of a thick curved stroke from (x1,y1) to (x2,y2) with an arrow head at the end.
+    // bend: sideways offset of the curve's control point as a fraction of the length (+ = to the left of travel).
+    A.arrowPolys = function (x1, y1, x2, y2, bend, width, head) {
+        var dx = x2 - x1, dy = y2 - y1, len = Math.sqrt(dx * dx + dy * dy) || 1;
+        var nx = -dy / len, ny = dx / len;
+        var cx = (x1 + x2) / 2 + nx * bend * len, cy = (y1 + y2) / 2 + ny * bend * len;
+        function pt(t) { var u = 1 - t; return [u * u * x1 + 2 * u * t * cx + t * t * x2, u * u * y1 + 2 * u * t * cy + t * t * y2]; }
+        function tan(t) { var a = 2 * (1 - t) * (cx - x1) + 2 * t * (x2 - cx), b = 2 * (1 - t) * (cy - y1) + 2 * t * (y2 - cy), l = Math.sqrt(a * a + b * b) || 1; return [a / l, b / l]; }
+        // stop the shaft where the head starts
+        var N = 24, tEnd = Math.max(0.5, 1 - head * 0.8 / len), left = [], right = [];
+        for (var k = 0; k <= N; k++) {
+            var t = tEnd * k / N, p = pt(t), d = tan(t), w = width / 2;
+            left.push([p[0] - d[1] * w, p[1] + d[0] * w]);
+            right.push([p[0] + d[1] * w, p[1] - d[0] * w]);
+        }
+        var shaft = left.concat(right.reverse());
+        var e = pt(1), de = tan(1), b = [e[0] - de[0] * head, e[1] - de[1] * head];
+        var hw = head * 0.55;
+        var tri = [[e[0], e[1]], [b[0] - de[1] * hw, b[1] + de[0] * hw], [b[0] + de[1] * hw, b[1] - de[0] * hw]];
+        return [shaft, tri];
+    };
+
     A.roundedRect = function (name, x, y, w, h, radius, fill, opacity) {
         return A.shape(name, x, y, w, h, { radius: radius, fill: fill, opacity: opacity });
     };
@@ -282,7 +345,16 @@ var ASD = ASD || {};
 
     // Moves `layer` to the top of `group`.
     A.addToGroup = function (group, layer) {
-        if (group.layers.length === 0) layer.move(group, ElementPlacement.INSIDE);
+        if (group.layers.length === 0) {
+            if (layer.typename === 'LayerSet') {
+                // moving a group INSIDE an empty group is rejected by Photoshop: use a temporary anchor layer
+                var tmp = group.artLayers.add();
+                layer.move(tmp, ElementPlacement.PLACEBEFORE);
+                tmp.remove();
+            } else {
+                layer.move(group, ElementPlacement.INSIDE);
+            }
+        }
         else layer.move(group.layers[0], ElementPlacement.PLACEBEFORE);
         return layer;
     };
@@ -410,6 +482,8 @@ var ASD = ASD || {};
                 if (cl) A.setSolidFill(src, cl, bodyColor);
                 else A.warnings.push('Mockup: color layer "' + mockup.colorLayer + '" not found');
             }
+            // merge to one layer first: cropping a many-layer mockup needs a lot of scratch disk
+            if (mockup.merge !== false) { try { src.mergeVisibleLayers(); } catch (eM) {} }
             if (mockup.crop !== false) {
                 // keep the phone + its shadow: screen bounds grown by cropPad on each side (more at the bottom)
                 var pad = sb.w * (mockup.cropPad === undefined ? 0.16 : mockup.cropPad);
