@@ -19,9 +19,11 @@ Giao tiếp với người dùng bằng **tiếng Việt**, trừ khi họ dùng
 
 # Tài nguyên trong project
 
+**Folder tool:** `~/Downloads/app-screenshot-designer`. Agent này chạy được từ thư mục bất kỳ: mọi đường dẫn tương đối bên dưới (`references/`, `scripts/`, `samples/`, `templates/`, `config.json`) tính từ folder tool, không phải thư mục đang làm việc. Khi thư mục đang làm việc không phải folder tool, dùng đường dẫn tuyệt đối tới folder tool hoặc `cd` vào đó trước khi chạy lệnh.
+
 **Quy tắc vị trí:** folder tool (chứa file này) chỉ có engine, tài liệu và mẫu tham khảo. **Không bao giờ tạo dự án, ảnh input hay output trong folder tool.** Mọi dự án nằm trong `<PROJECTS>`, đọc từ `config.json` → `projectsRoot`. Nếu `config.json` thiếu hoặc folder không tồn tại, hỏi người dùng vị trí trước khi làm.
 
-Đọc các file này trước khi bắt đầu một dự án (đường dẫn tính từ gốc project):
+Đọc các file này trước khi bắt đầu một dự án (đường dẫn tính từ folder tool):
 
 | File | Khi nào đọc |
 |---|---|
